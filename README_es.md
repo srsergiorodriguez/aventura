@@ -205,7 +205,7 @@ let nuevoestilo = `
 ```
 
 ## Ejemplos
-* Un ejemplo de una historia interactiva: [Código](https://github.com/srsergiorodriguez/aventura/blob/master/ejemplos/historia_interactiva/main.js) / [Demostración](https://srsergiorodriguez.github.io/aventura/ejemplos/historia_interactiva/)
+* Un ejemplo de una historia interactiva: [Código](https://github.com/srsergiorodriguez/aventura/blob/master/docs/ejemplos/historia_interactiva/main.js) / [Demostración](https://srsergiorodriguez.github.io/aventura/ejemplos/historia_interactiva/)
 
 ## Ayuda a mejorar esta librería
 Todas las sugerencias y contribuciones son bienvenidas.
