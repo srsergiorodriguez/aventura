@@ -1,13 +1,13 @@
-# Aventura
+# Aventura :loop:
 Biteratura, texto generativo e historias interactivas en JavaScript.
 
-Para leer la referencia en inglés... For a reference in english: clic aquí / click here.
+Para leer la referencia en inglés... For a reference in english: [clic aquí / click here](https://github.com/srsergiorodriguez/aventura/blob/master/README.md).
 
 ## Acerca
 Esta es una librería que te permite crear texto de forma generativa usando [Gramática libre de contexto](https://es.wikipedia.org/wiki/Gram%C3%A1tica_libre_de_contexto "Gramática libre de contexto") e [historias interactivas](https://es.wikipedia.org/wiki/Aventura_conversacional "FJuegos conversacionales") similares a las aventuras basadas en texto clásicas (por ejemplo, el juego [Zork](https://es.wikipedia.org/wiki/Zork "Zork"). Aventura tiene el propósito de ser una librería de programación creativa para explorar la "biteratura" o los textos literarios generados por computador. Aunque es simple, con ella puedes crear textos o historias complejas que se dividen en múltiples posibilidades generativas.
 
 ## Cómo usarla
-Solo descarga la librería minificada, y añade una etiqueta de script a tu documento .html, así:
+Solo descarga la [librería minificada](https://github.com/srsergiorodriguez/aventura/blob/master/minified/aventura.min.js), y añade una etiqueta de script a tu documento .html, así:
 
 `<script src="aventura.min.js></script>`
 
@@ -18,12 +18,12 @@ Luego, en tu código, crea una instancia de la clase Aventura, y, para que la li
 (si quieres usar la librería con textos en inglés pasa la string 'en' como argumento).
 
 ### Índice
-* Texto generativo con Gramática libre de contexto
-* Historias interactivas basadas en texto
-* Ayuda a mejorar esta librería
-* Versión, licencia y copyright
+* [Texto generativo con Gramática libre de contexto](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#texto-generativo-con-gram%C3%A1tica-libre-de-contexto)
+* [Historias interactivas basadas en texto](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#historias-interactivas-basadas-en-texto)
+* [Ayuda a mejorar esta librería](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#ayuda-a-mejorar-esta-librer%C3%ADa)
+* [Versión, licencia y copyright](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#versi%C3%B3n-licencia-y-copyright)
 
-## Texto generativo con Gramática libre de contexto
+## Texto generativo con Gramática libre de contexto :monkey:
 Aventura te permite generar texto si defines una gramática y la desenvuelves. Es decir, si recorres un camino posible dentro de la estructura de la gramática y, como resultado, generas una cadena de texto (que idealmente será diferente cada vez que desenvuelvas tu gramática).
 Piensa que una gramática es como un árbol: empiezas en el tronco y luego eliges una rama, luego una subrama (digamos) y así, hasta que te encuentras con una hoja (¡esa hoja es una parte del texto final!). Luego sigues por otra rama y continúas el procedimiento. Al final quedas con un conjunto de ramas que forman tu nuevo texto generado. Si repites el proceso es posible que generes un texto muy diferente.
 
@@ -35,7 +35,6 @@ Dentro de las reglas peudes referenciar símbolos y variables usando etiquetas r
 Este es un ejemplo de una gramática muy simple:
 
 ```
-[JavaScript]
 let gramatica = {
     frase: ["Una <animal> <adjetivo>"], // Esta regla es no-terminal, porque apunta a otras reglas
     animal: ["gata","jirafa","ardilla"], // Esta regla es un inventario de palabras terminales
@@ -50,7 +49,6 @@ Luego de que crear la variable, tienes que pasarla como un argumento a tu instan
 Y, para generar un texto nuevo, llamas la función **'developGrammar'**. Esta función recibe como argumento el nombre de la regla que quieres usar para empezar a desenvolver el texto. Por ejemplo:
 
 ```
-[JavaScript]
 let textoGenerado = aventura.developGrammar('frase');
 // Un resultado posible podría ser: "Una gata inteligente"
 ```
@@ -62,7 +60,6 @@ Intenta crear reglas más complejas. ¡Tu imaginación es el límite! ...y el po
 Convenientemente, puedes aplicar algunas transformaciones al texto que se desenvuelve en símbolos terminales. Por ejemplo, puedes poner en mayúsculas la primera letra de la cadena de texto de algún súmbolo o puedes poner en mayúsculas todas sus letras. Si es el caso, las tranformaciones se deben indicar dentro de un par de numerales '#' luego del nombre del símbolo (si quieres poner varias transformaciones, sepáralas con comas):
 
 ```
-[JavaScript]
 let gramatica = {
     frase: ["<animal#ALLCAPS#>"],
     animal: ["gato","jirafa","ardilla"]
@@ -80,7 +77,6 @@ En el momento, las tranformaciones posibles son:
 Puedes crear nuevas reglas mientras tu gramática se desenvuelve. Esto es útil para fijar reglas que quieres producir generativamente pero que además usaras recurrentemente en tu neuvo texto (por ejemplo, un personaje que aparece varias veces en una historia). Las reglas nuevas se crean definiendo un nuevo nombre para la regla (ecerrado en `$`), seguido de un set de subreglas, encerradas en paréntesis angulares. Cada subregla debe especificarse en pares de clave-valor, y el conjunto de subreglas deben separarse por comas:
 
 ```
-[JavaScript]
 let gramatica = {
     frase: ["$heroe$<nombre:animal,atributo:adjetivo>Esta es la historia de una <heroe.nombre>. Debes saber que la <heroe.nombre> fue muy <heroe.atributo>"],
     animal: ["gata","jirafa","ardilla"],
@@ -91,7 +87,7 @@ let textoGenerado = aventura.developGrammar('frase');
 // Un resultado posible puede ser: "Esta es la historia de una gata. Debes saber que la gata fue muy valiente"
 ```
 
-## Historias interactivas basadas en texto
+## Historias interactivas basadas en texto :squirrel:
 Aventura te permite crear historias interactivas basadas en texto inspiradas en aventuras de texto clásicas como Zork, en donde debes ingresar decisiones al programa para avanzar en la historia. Aventura lets you create interactive text stories inspired by classic text adventures like Zork, where you have to input decisions into a prompt to advance the story. Con Aventura creas **historias de decisión binaria**, es decir, historias en donde debes decidir entre dos opcions en cada momento y, como resultado de tu decisión, la historia toma diferentes caminos.
 
 Para crear una historia interactiva debes pasar un objeto con las escenes de tu historia a la función **'setScenes'**. 
@@ -111,7 +107,6 @@ Acicionalmente, el objeto debe contener un set especial de escenas:
 Por ejemplo:
 
 ```
-[JavaScript]
 let escenas = {
   cover: {
     title: "La ardilla sagaz",
@@ -129,7 +124,7 @@ let escenas = {
     messageA: "La ardilla se come la avellana.",
     messageB: "La ardilla guarda la avellana. ¡Una movida inteligente! Porque, tiempo después, en invierno, volió a encontrarla y pudo comerla cuando tenía hambre."
   },
-  peanuteaten: {
+  avellanacomida: {
     text:"Cuando llegó el invierno la ardilla no encontró avellanas para comer. Entonces, ¿qué debería comer?",
     optionA:"Comer pasto",
     optionB:"Comer nieve",
@@ -222,6 +217,9 @@ Algunas implementaciones que quisiera añadir en el futuro son:
 
 ## Versión, licencia y copyright
 V.1.0
+
 (c) Sergio Rodríguez Gómez
+
 2019
-Esta librería está amparada bajo una licencia MIT
+
+Esta librería está amparada bajo una [licencia MIT](https://github.com/srsergiorodriguez/aventura/blob/master/LICENSE)

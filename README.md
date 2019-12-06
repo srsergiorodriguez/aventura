@@ -1,13 +1,13 @@
-# Aventura
+# Aventura :loop:
 Biterature, generative text and interactive stories in JavaScript.
 
-For a reference in Spanish... para una referencia en español: click here / clic aquí
+For a reference in Spanish... para una referencia en español: [click here / clic aquí](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md).
 
 ## About
 This is a library that lets you create generative text using [Context Free Grammars](https://en.wikipedia.org/wiki/Context-free_grammar "Context Free Grammar") and [interactive stories](https://en.wikipedia.org/wiki/Interactive_fiction "Interactive fiction") similar to classic text based adventures (see, for example, [Zork](https://en.wikipedia.org/wiki/Zork "Zork"). Aventura is intended to be a creative coding library for exploring "biterature" or computer generated literary texts. Even though it is simple, you can create complex texts or stories that branch multiple generative possibilities.
 
 ## How to use
-Just download the minified library to your project, and add a script tag referencing the minified library to your .html document, like this:
+Just download the [minified library](https://github.com/srsergiorodriguez/aventura/blob/master/minified/aventura.min.js) to your project, and add a script tag referencing the minified library to your .html document, like this:
 
 `<script src="aventura.min.js></script>`
 
@@ -17,13 +17,13 @@ Then, in your code, create an instance for the Aventura class, for example:
 
 (if you want to change the default language to Spanish, pass 'es' as an argument when you create an instance).
 
-### Index — Jump right into
-* Context Free Grammar Generative Text
-* Interactive text based stories
-* Help to improve this library
-* Version, license and copyright
+### Index
+* [Context Free Grammar Generative Text](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#context-free-grammar-generative-text)
+* [Interactive text based stories](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#interactive-text-based-stories)
+* [Help to improve this library](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#help-to-improve-this-library)
+* [Version, license and copyright](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#help-to-improve-this-library)
 
-## Context Free Grammar Generative Text
+## Context Free Grammar Generative Text :monkey:
 Aventura lets you generate text by defining a grammar and by developing it. Namely traversing a possible path inside the structure of the grammar and, as a result, generating each time a different string of text (ideally!).
 Think of a grammar as a tree: you start at the trunk and then you choose a branch, and then a sub branch and so on, until you find a leaf; the leaf is a word or a set of words. Then you choose other branches and end in another leaf... At the end, you get a set of leafs, that's your newly generated text.
 
@@ -34,7 +34,6 @@ Symbols and variables are referenced inside rules by using tags enclosed in angl
 This is an example of a very simple grammar.
 
 ```
-[JavaScript]
 let grammar = {
     phrase: ["A <adjective> <animal>"], // this rule references other rules. It is non-terminal
     animal: ["cat","dog","squirrel"], // this rule is an inventory of terminal words
@@ -49,7 +48,6 @@ After you create the grammar, you have to pass it as an argument into your insta
 And, to generate a new piece of text, you call the **'developGrammar'** function. This function receives as an argument the name of the rule that should be used to start the development of the text. For example:
 
 ```
-[JavaScript]
 let generatedText = adventure.developGrammar('phrase');
 // A possible result could be: "A smart cat"
 ```
@@ -61,7 +59,6 @@ Try creating more complex rules. Your imagination (and the power of your compute
 Conveniently, you can apply some transformations to the text developed by terminal symbols. For instance, you can capitalize the first letter of the string or capitalize all letters. If it is the case, transformations should all be indicated into one pair of hashtags '#' after the name of the symbol (each transformation must be separated by a comma):
 
 ```
-[JavaScript]
 let grammar = {
     phrase: ["<animal#ALLCAPS#>"],
     animal: ["cat","dog","squirrel"]
@@ -77,7 +74,6 @@ At the moment, available transformations are: CAPITALIZE, and ALLCAPS.
 You can set new rules as your grammar develops. This is useful to fix rules that you want generate but you also want to use repeatedly in your text (i.e. A character in a story that reapears constantly). New rules are created by defining a new name for the rule (enclosed in `$`) followed by a set of subrules, enclosed by angle brackets. Each subrule must be specified in key-value pairs, and must be separated by commas:
 
 ```
-[JavaScript]
 let grammar = {
     phrase: ["$hero$<name:animal,attribute:adjective>This is the story of <hero.name>. You must know that <hero.name> was a very <hero.attribute> hero"],
     animal: ["cat","dog","squirrel"],
@@ -88,7 +84,7 @@ let generatedText = adventure.developGrammar('phrase');
 // A possible result could be: "This is the story of dog. You must know that dog was a very brave hero"
 ```
 
-## Interactive text based stories
+## Interactive text based stories :squirrel:
 Aventura lets you create interactive text stories inspired by classic text adventures like Zork, where you have to input decisions into a prompt to advance the story. In Aventura you can create **binary decision stories**, namely, stories where you must choose between two options each time and, as a result, the story takes different paths depending on your decisions. 
 
 For creating an interactive story you must pass an object as argument into **'setScenes'** function. Such object must contain the structure of the scenes of your story: 
@@ -107,7 +103,6 @@ Aditionally, a scenes object must contain a set of special scenes:
 For example:
 
 ```
-[JavaScript]
 let scenes = {
   cover: {
     title: "The smart squirrel",
@@ -211,8 +206,11 @@ TODO LIST — some implementations I want to add in the future are:
 * Add a simple interface to display generative text
 * Make possible to add images to interactive stories
 
-## Versión, license and copyright
+## Version, license and copyright
 V.1.0
+
 (c) Sergio Rodríguez Gómez
+
 2019
-Released under MIT License
+
+Released under [MIT License](https://github.com/srsergiorodriguez/aventura/blob/master/LICENSE)
