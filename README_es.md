@@ -20,6 +20,7 @@ Luego, en tu código, crea una instancia de la clase Aventura, y, para que la li
 ### Índice
 * [Texto generativo con Gramática libre de contexto](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#texto-generativo-con-gram%C3%A1tica-libre-de-contexto)
 * [Historias interactivas basadas en texto](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#historias-interactivas-basadas-en-texto)
+* [Ejemplos](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#ejemplos)
 * [Ayuda a mejorar esta librería](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#ayuda-a-mejorar-esta-librer%C3%ADa)
 * [Versión, licencia y copyright](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#versi%C3%B3n-licencia-y-copyright)
 
@@ -202,6 +203,9 @@ let nuevoestilo = `
         outline:none;
       }`;
 ```
+
+## Ejemplos
+* Un ejemplo de una historia interactiva: [Código](https://github.com/srsergiorodriguez/aventura/blob/master/ejemplos/historia_interactiva/main.js) [Demostración]()
 
 ## Ayuda a mejorar esta librería
 Todas las sugerencias y contribuciones son bienvenidas.
