@@ -145,11 +145,11 @@ adventure.setScenes(scenes);
 
 After you have defined your scenes, Aventura lets you choose between two options: to display your interactive story in prompts in your explorer (by using **'promptAdventure'** function), or to display your interactive story in a very simple html, css styled interface (by using **'domAdventure'** function). It is very simple to choose either one:
 
-`adventure.promptAdventure(); // the prompt interface`
+`aventura.promptAdventure(); // the prompt interface`
 
 or
 
-`adventure.domAdventure(); // the html interface`
+`aventura.domAdventure(); // the html interface`
 
 Try both and chose the interface you like the most
 
@@ -159,7 +159,7 @@ NOTE: You can pass in the id of a div element into **domAdventure** function if 
 #### Overriding the style of domAdventure
 If you want to style the aspect of a story displayed by calling the **domAdventure** function, you can use **overrideStyle** function. This function receives as an argument a string that contains the new css code you want to use for styling.
 
-`adventure.overrideStyle(newstyle)`
+`aventura.overrideStyle(newstyle)`
 
 I recommend using the default styling as a template and adapting it to your taste:
 
