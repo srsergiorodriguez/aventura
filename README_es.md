@@ -20,6 +20,7 @@ Luego, en tu código, crea una instancia de la clase Aventura, y, para que la li
 ### Índice
 * [Texto generativo con Gramática libre de contexto](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#texto-generativo-con-gram%C3%A1tica-libre-de-contexto)
 * [Historias interactivas basadas en texto](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#historias-interactivas-basadas-en-texto)
+* [Opciones personalizadas](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#opciones-personalizadas)
 * [Ejemplos](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#ejemplos)
 * [Ayuda a mejorar esta librería](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#ayuda-a-mejorar-esta-librer%C3%ADa)
 * [Versión, licencia y copyright](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#versi%C3%B3n-licencia-y-copyright)
@@ -57,7 +58,7 @@ let textoGenerado = aventura.developGrammar('frase');
 Intenta crear reglas más complejas. ¡Tu imaginación es el límite! ...y el poder del computador, por supuesto.
 
 ### Opciones avanzadas
-#### Trandormar el texto terminal
+#### Transformar el texto terminal
 Convenientemente, puedes aplicar algunas transformaciones al texto que se desenvuelve en símbolos terminales. Por ejemplo, puedes poner en mayúsculas la primera letra de la cadena de texto de algún súmbolo o puedes poner en mayúsculas todas sus letras. Si es el caso, las tranformaciones se deben indicar dentro de un par de numerales '#' luego del nombre del símbolo (si quieres poner varias transformaciones, sepáralas con comas):
 
 ```
@@ -157,51 +158,66 @@ o
 
 Prueba las dos y escoge la que más te guste en cada circunstancia.
 
+:surfer: También puedes añadir imágenes a tus escenas, usando los parámetros *image* (para la imagen inicial de la escena) e *imageA* y *imageB* para los mensajes que se presentan luego de elegir alguna opción. Las imágenes solo se presentan usando la interfaz **domAdventure** y se ajustan al ancho general de la interfaz (por defecto, 600px).
+
 NOTA: puedes pasar como argumento el id de un elemento div en html en la función **domAdventure** si quieres que esté contenido en algún lugar particular del diseño de tu página web.
 
-### Opciones Avanzadas
-#### Sobreescribir el estilo de domAdventure
-Si quieres cambiar el aspecto de la interfaz que se produce a partir de la función **domAdventure** puedes usar la función **overrideStyle**. Esta función recibe como argumento una *string* que contiene el nuevo código que css con el que quieres modificar el estilo.
-
-`aventura.overrideStyle(nuevoestilo)`
-
-Te recomiendo usar el estilo original como plantilla y modificarlo a tu gusto:
+## Opciones personalizadas
+Puedes cambiar algunas opciones si pasas un objeto de configuración cuando crear una nueva instancia de aventura:
 
 ```
-let nuevoestilo = `
-      #storygeneraldiv {
-        box-sizing: border-box;
-        margin:auto;
-      }
-      #storydiv {
-        border: solid black 1px;
-      }
-      .storyp {
-        box-sizing: border-box;
-        font-size: 16px;
-        padding: 10px;
-        font-family: 'Courier New', Courier, monospace;
-        //border: solid black 1px;
-      }
-      .storybutton {
-        font-family: 'Courier New', Courier, monospace;
-        font-size:18px;
-        background:white;
-        box-shadow:none;
-        border:solid 1px;
-        margin:0px 0px;
-        float:right;
-      }
-      .storybutton:hover {
-        color:white;
-        background:#111111;
-      }
-      .storybutton:active {
-        background:#666666;
-      }
-      .storybutton:focus {
-        outline:none;
-      }`;
+let config = {//aquí van tus nuevos parámetros}
+const aventura = new Aventura('es',config);
+```
+Las opciones son:
+#### Cambiar la velocidad de la máquina de escribir
+Para cambiar la velocidad del efecto de máquina de escribir en la interfaz de **domAdventure** pon como parámetro de **typewriterSpeed** en el objeto de configuración el valor que deses. El valor por defecto es 50, es decir, una nueva letra cada 50 milisegundos.
+Si el valor de **typewriterSpeed** es 0, se desactiva el efecto y el texto aparece de inmediato.
+
+#### Sobreescribir el estilo de domAdventure
+Para sobreescribir el estilo por defecto de la interfaz **domAdventure**, pasa una string con el estilo css a la propiedad style en el objeto de configuración. 
+Te recomiendo tomar como referencia el estilo original y adaptarlo a tu gusto:
+```
+#storygeneraldiv {
+  box-sizing: border-box;
+  margin: auto;
+  max-width: 600px;
+}
+#storydiv {
+  box-sizing: border-box;
+  border: solid black 1px;
+}
+.storyp {
+  box-sizing: border-box;
+  min-height: 40px;
+  font-size: 18px;
+  padding: 0px 10px;
+  font-family: 'Courier New', Courier, monospace;
+}
+.storybutton {
+  font-size: 20px;
+  padding: 3px:
+  background: white;
+  box-shadow: none;
+  border: solid 1px;
+  margin: 0px 0px;
+  font-family: 'Courier New', Courier, monospace;
+}
+.storybutton:hover {
+  color: white;
+  background: black;
+}
+.storyimage {
+  max-width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+@media screen and (max-device-width: 500px) {
+  #storygeneraldiv {
+    max-width:100%;
+  }
+}
 ```
 
 ## Ejemplos
@@ -212,15 +228,15 @@ Todas las sugerencias y contribuciones son bienvenidas.
 Es importante decir que esta librería tiene como intención ser bilingüe, quiero que sea usable y divertida tanto para personas que hablan español como para quienes hablan inglés.
 
 Algunas implementaciones que quisiera añadir en el futuro son:
+* <del>Añadir la posibilidad de incluir imágenes a las historias interactivas</del>
 * Añadir una transformación que pluralice palabras, tanto en inglés como español
 * Añadir una transformación que conjugue verbos, tanto en inglés como español
 * Añadir lrobabilidades de que ese escojan ciertas reglas cuando se desenvuelve una gramática
 * Hacer más eficiente y fácil de usar la función de cambiar el estilo css
 * Añadir una interfaz simple que permita mostrar texto generativo
-* Añadir la posibilidad de incluir imágenes a las historias interactivas
 
 ## Versión, licencia y copyright
-V.1.0
+V.1.1
 
 (c) Sergio Rodríguez Gómez
 

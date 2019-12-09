@@ -13,15 +13,16 @@ Just download the [minified library](https://github.com/srsergiorodriguez/aventu
 
 Then, in your code, create an instance for the Aventura class, for example:
 
-`const adventure = new Aventura();`
+`const adventure = new Aventura('en');`
 
-(if you want to change the default language to Spanish, pass 'es' as an argument when you create an instance).
+The argument 'en' specifies the language that the instance will use. In this case, english. If you want to change the default language to Spanish, pass 'es' as an argument when you create an instance. If you leave the argument undefined the default language will be english. 
 
 ### Index
 * [Context Free Grammar Generative Text](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#context-free-grammar-generative-text)
 * [Interactive text based stories](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#interactive-text-based-stories)
+* [Custom options](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#custom-options)
 * [Help to improve this library](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#help-to-improve-this-library)
-* [Version, license and copyright](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#help-to-improve-this-library)
+* [Version, license and copyright](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#version-license-and-copyright)
 
 ## Context Free Grammar Generative Text :monkey:
 Aventura lets you generate text by defining a grammar and by developing it. Namely traversing a possible path inside the structure of the grammar and, as a result, generating each time a different string of text (ideally!).
@@ -151,47 +152,70 @@ or
 
 `aventura.domAdventure(); // the html interface`
 
-Try both and chose the interface you like the most
+Try both and chose the interface you like the most.
+
+:surfer: If you chooe **domAdventure** interface you can also add images to your scenes by specifying an image path in the *image* parameter (for the initial presentation of each scene) and *imageA* / *imageB* for the subsequent messages. All the images adapt to the size of the inrface (by default, 600px).
 
 NOTE: You can pass in the id of a div element into **domAdventure** function if you want to place the interface in a particular place in your website.
 
-### Advanced options
+## Custom options
+You can change some options by passing an configuration object into any new instance of Aventura.
+
+```
+let configuration = {//here you specify new options}
+const adventure = new Aventura('en',options);
+```
+
+Such options are:
+#### Changing typewriter speed
+To change the default speed of the typewriter effect in the domAdventure interface, define the **typewriterSpeed** property in your configuration object. Default is 50,that is, a new letter every 50 milliseconds.
+If **typewriterSpeed** is 0, the typewriter effect will get disabled and text will display immediately.
+
 #### Overriding the style of domAdventure
-If you want to style the aspect of a story displayed by calling the **domAdventure** function, you can use **overrideStyle** function. This function receives as an argument a string that contains the new css code you want to use for styling.
-
-`aventura.overrideStyle(newstyle)`
-
+To override the default style of the **domAdventure** interface, pass as string containing your new css style into the **style** property in the configuration object.
 I recommend using the default styling as a template and adapting it to your taste:
 
 ```
-let newstyle = `
-      #storygeneraldiv {
-        box-sizing: border-box;
-        margin:auto;
-      }
-      #storydiv {
-        border: solid black 1px;
-      }
-      .storyp {
-        box-sizing: border-box;
-        font-size: 16px;
-        padding: 10px;
-        font-family: 'Courier New', Courier, monospace;
-        //border: solid black 1px;
-      }
-      .storybutton {
-        font-family: 'Courier New', Courier, monospace;
-        font-size:18px;
-        background:white;
-        box-shadow:none;
-        border:solid 1px;
-        margin:0px 0px;
-        float:right;
-      }
-      .storybutton:hover {
-        color:white;
-        background:#111111;
-      }`;
+#storygeneraldiv {
+  box-sizing: border-box;
+  margin: auto;
+  max-width: 600px;
+}
+#storydiv {
+  box-sizing: border-box;
+  border: solid black 1px;
+}
+.storyp {
+  box-sizing: border-box;
+  min-height: 40px;
+  font-size: 18px;
+  padding: 0px 10px;
+  font-family: 'Courier New', Courier, monospace;
+}
+.storybutton {
+  font-size: 20px;
+  padding: 3px:
+  background: white;
+  box-shadow: none;
+  border: solid 1px;
+  margin: 0px 0px;
+  font-family: 'Courier New', Courier, monospace;
+}
+.storybutton:hover {
+  color: white;
+  background: black;
+}
+.storyimage {
+  max-width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+@media screen and (max-device-width: 500px) {
+  #storygeneraldiv {
+    max-width:100%;
+  }
+}
 ```
 
 ## Help to improve this library
@@ -199,15 +223,15 @@ All suggestions and contributions are welcome.
 It is important to say that this is a library that intends to be bilingual, I want it to be usable and fun for both English speaking and Spanish speaking users.
 
 TODO LIST — some implementations I want to add in the future are:
+* <del>Make possible to add images to interactive stories</del>
 * Add a transformation that pluralizes words, both in English and Spanish
 * Add a transformation that conjugates words, both in English and Spanish
 * Add probabilities to rule choosing when a grammar is being developed
 * Make a more efficient and easier to use css styling function
 * Add a simple interface to display generative text
-* Make possible to add images to interactive stories
 
 ## Version, license and copyright
-V.1.0
+V.1.1
 
 (c) Sergio Rodríguez Gómez
 

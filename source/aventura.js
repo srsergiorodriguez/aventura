@@ -1,13 +1,59 @@
 class Aventura {
   /*
-  Aventura.js 1.0
+  Aventura.js 1.1
   A library of biterature
   Copyright (c) 2019 Sergio Rodríguez Gómez / https://meanmeaning.com
   Released under MIT License
   */
-  constructor(lang = 'en') {
+  constructor(lang = 'en',options) {
     this.lang = (lang === 'en' || lang === 'es') ? lang : undefined;
     if (!this.lang) {console.log('Incorrect language / lenguaje incorrecto')}
+    this.options = {
+      typewriterSpeed: 50,
+      style: `
+      #storygeneraldiv {
+        box-sizing: border-box;
+        margin: auto;
+        max-width: 600px;
+      }
+      #storydiv {
+        box-sizing: border-box;
+        border: solid black 1px;
+      }
+      .storyp {
+        box-sizing: border-box;
+        min-height: 40px;
+        font-size: 18px;
+        padding: 0px 10px;
+        font-family: 'Courier New', Courier, monospace;
+      }
+      .storybutton {
+        font-size: 20px;
+        padding: 3px:
+        background: white;
+        box-shadow: none;
+        border: solid 1px;
+        margin: 0px 0px;
+        font-family: 'Courier New', Courier, monospace;
+      }
+      .storybutton:hover {
+        color: white;
+        background: black;
+      }
+      .storyimage {
+        max-width: 100%;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      @media screen and (max-device-width: 500px) {
+        #storygeneraldiv {
+          max-width:100%;
+        }
+      }
+      `
+    }
+    if (options) {this.options = Object.assign(this.options,options)}
   }
 
   setScenes(scenes) {
@@ -73,47 +119,19 @@ class Aventura {
     let css = document.createElement('style');
     css.id = "adventurestyle";
     css.type = 'text/css'; 
-    let styles = `
-      #storygeneraldiv {
-        box-sizing: border-box;
-        margin:auto;
-      }
-      #storydiv {
-        border: solid black 1px;
-      }
-      .storyp {
-        box-sizing: border-box;
-        font-size: 16px;
-        padding: 10px;
-        font-family: 'Courier New', Courier, monospace;
-      }
-      .storybutton {
-        font-family: 'Courier New', Courier, monospace;
-        font-size:18px;
-        background:white;
-        box-shadow:none;
-        border:solid 1px;
-        margin:0px 0px;
-        float:right;
-      }
-      .storybutton:hover {
-        color:white;
-        background:#111111;
-      }`;
-    css.innerHTML = styles;
+    css.innerHTML = this.options.style;
     document.getElementsByTagName("head")[0].appendChild(css);
 
     let generaldiv = document.createElement("div");
     generaldiv.id = "storygeneraldiv";
-    generaldiv.style.width = document.body.clientWidth<500 ? document.body.clientWidth+"px" : "500px";
     document.body.appendChild(generaldiv);
 
     if (container) {
       let cont = document.getElementById(container);
       document.cont.appendChild(cont);
     }
-    
-    let cover = {text:`${this.scenes.cover.title.toUpperCase()}<br>${this.scenes.cover.subtitle}`};
+
+    this.scenes.cover.text = `${this.scenes.cover.title.toUpperCase()}<br>${this.scenes.cover.subtitle}`;
     this.scenes.intro.continuation = 'start';
     this.scenes.end.continuation = 'credits';
     let credits = this.scenes.credits.text;
@@ -122,15 +140,11 @@ class Aventura {
       }
       credits+=`<br>${this.scenes.credits.year}`
     this.scenes.credits.text = credits;
-    this.goToScene_dom(cover,cover.text,()=>{this.continueButton(this.scenes.intro,'continue')});
+    this.goToScene_dom(this.scenes.cover,'MAIN',()=>{this.continueButton(this.scenes.intro,'continue')});
   }
 
-  overrideStyle(styles) {
-    let css = document.getElementById("adventurestyle");
-    css.innerHTML = styles;
-  }
-
-  goToScene_dom(s,text,callback) {
+  goToScene_dom(s,textType,callback) {
+    // Delete previous div containing story display
     let generaldiv = document.getElementById("storygeneraldiv");
     let prevdiv = document.getElementById("storydiv");
     if (prevdiv) {generaldiv.removeChild(prevdiv)};
@@ -139,24 +153,47 @@ class Aventura {
     storydiv.id = "storydiv";
     generaldiv.appendChild(storydiv);
 
+    let text;
+    let imagePath;
+    if (textType == 'MAIN') {
+      text = s.text;
+      imagePath = s.image;
+    } else if (textType == 'A') {
+      text = s.messageA;
+      imagePath = s.imageA;
+    } else if (textType == 'B') {
+      text = s.messageB;
+      imagePath = s.imageB;
+    }
+
+    if (imagePath != undefined) {
+      let image = document.createElement("img");
+      image.className = "storyimage";
+      image.src = imagePath;
+      storydiv.appendChild(image);
+    }
+
     let p = document.createElement("p");
     p.className = "storyp";
-    
-    p.style.minHeight = "40px";
     p.innerHTML = "";
     storydiv.appendChild(p);
-
+    
     text = text.replace(/\n/g,'<br>');
-    let i = 0;
-    let interval = setInterval(()=>{
-      let textpart = text.substring(0,i);
-      p.innerHTML = textpart;
-      i++;
-      if (i>text.length) {
-        clearInterval(interval);
-        if (s.key!='credits') {callback()};
-      }
-    },50);
+    if (this.options.typewriterSpeed > 0) {
+      let i = 0;
+      let interval = setInterval(()=>{
+        let textpart = text.substring(0,i);
+        p.innerHTML = textpart;
+        i++;
+        if (i>text.length) {
+          clearInterval(interval);
+          if (s.key!='credits') {callback()};
+        }
+      },this.options.typewriterSpeed);
+    } else {
+      p.innerHTML = text;
+      if (s.key!='credits') {callback()};
+    }
   }
 
   optionButtons(s) {
@@ -167,7 +204,7 @@ class Aventura {
     storydiv.appendChild(optionAButton);
     optionAButton.addEventListener("click",()=>{
       let buttonType = s.sceneA == 'end' ? 'continue' : 'options';
-      this.goToScene_dom(s,s.messageA,()=>{this.continueButton(this.scenes[s.sceneA],buttonType)});
+      this.goToScene_dom(s,'A',()=>{this.continueButton(this.scenes[s.sceneA],buttonType)});
     });
 
     let optionBButton = document.createElement("button");
@@ -176,7 +213,7 @@ class Aventura {
     storydiv.appendChild(optionBButton);
     optionBButton.addEventListener("click",()=>{
       let buttonType = s.sceneB == 'end' ? 'continue' : 'options';
-      this.goToScene_dom(s,s.messageB,()=>{this.continueButton(this.scenes[s.sceneB],buttonType)});
+      this.goToScene_dom(s,'B',()=>{this.continueButton(this.scenes[s.sceneB],buttonType)});
     });
   }
 
@@ -189,9 +226,9 @@ class Aventura {
     storydiv.appendChild(continueButton);
     continueButton.addEventListener("click",()=>{
       if (buttonType == 'continue') {
-        this.goToScene_dom(s,s.text,()=>{this.continueButton(this.scenes[s.continuation])});
+        this.goToScene_dom(s,'MAIN',()=>{this.continueButton(this.scenes[s.continuation])});
       }  else {
-        this.goToScene_dom(s,s.text,()=>{this.optionButtons(s)});
+        this.goToScene_dom(s,'MAIN',()=>{this.optionButtons(s)});
       }
     });
   }
