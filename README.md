@@ -25,7 +25,7 @@ The argument 'en' specifies the language that the instance will use. In this cas
 * [Version, license and copyright](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#version-license-and-copyright)
 
 ## Context Free Grammar Generative Text :monkey:
-Aventura lets you generate text by defining a grammar and by developing it. Namely traversing a possible path inside the structure of the grammar and, as a result, generating each time a different string of text (ideally!).
+Aventura lets you generate text by defining a grammar and by developing it. Namely, traversing a possible path inside the structure of the grammar and, as a result, generating each time a different string of text (ideally!).
 Think of a grammar as a tree: you start at the trunk and then you choose a branch, and then a sub branch and so on, until you find a leaf; the leaf is a word or a set of words. Then you choose other branches and end in another leaf... At the end, you get a set of leafs, that's your newly generated text.
 
 In Aventura, a grammar is estructured as an object which contains a set of rules in the form of arrays. Such rules should include **conventional strings of text**, **'terminal' symbols** (which point to inventories of words or phrases that could replace the symbol), or **'non-terminal' variables** (which point to inventories of rules that could replace the variables).
