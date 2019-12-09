@@ -218,6 +218,13 @@ Te recomiendo tomar como referencia el estilo original y adaptarlo a tu gusto:
   #storygeneraldiv {
     max-width:100%;
   }
+  .storyp {
+    font-size: 7vw;
+  }
+  .storybutton {
+    background: white;
+    font-size: 10vw;
+  }
 }
 ```
 

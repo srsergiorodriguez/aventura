@@ -217,6 +217,13 @@ I recommend using the default styling as a template and adapting it to your tast
   #storygeneraldiv {
     max-width:100%;
   }
+  .storyp {
+    font-size: 7vw;
+  }
+  .storybutton {
+    background: white;
+    font-size: 10vw;
+  }
 }
 ```
 
