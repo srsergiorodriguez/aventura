@@ -4,7 +4,7 @@ Biterature, generative text and interactive stories in JavaScript.
 For a reference in Spanish... para una referencia en español: [click here / clic aquí](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md).
 
 ## About
-This is a library that lets you create generative text using [Context Free Grammars](https://en.wikipedia.org/wiki/Context-free_grammar "Context Free Grammar") and [interactive stories](https://en.wikipedia.org/wiki/Interactive_fiction "Interactive fiction") similar to classic text based adventures (see, for example, [Zork](https://en.wikipedia.org/wiki/Zork "Zork"). Aventura is intended to be a creative coding library for exploring "biterature" or computer generated literary texts. Even though it is simple, you can create complex texts or stories that branch multiple generative possibilities.
+This is a library that lets you create generative text using [Context Free Grammars](https://en.wikipedia.org/wiki/Context-free_grammar "Context Free Grammar") and [interactive stories](https://en.wikipedia.org/wiki/Interactive_fiction "Interactive fiction") similar to classic text based adventures (see, for example, [Zork](https://en.wikipedia.org/wiki/Zork "Zork")). Aventura is intended to be a creative coding library for exploring "biterature" or computer generated literary texts. Even though it is simple, you can create complex texts or stories that branch multiple generative possibilities.
 
 ## How to use
 Just download the [minified library](https://github.com/srsergiorodriguez/aventura/blob/master/minified/aventura.min.js) to your project, and add a script tag referencing the minified library to your .html document, like this:
