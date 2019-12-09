@@ -19,22 +19,23 @@ class Aventura {
       #storydiv {
         box-sizing: border-box;
         border: solid black 1px;
+        width:100%;
       }
       .storyp {
         box-sizing: border-box;
         min-height: 40px;
-        font-size: 18px;
         padding: 0px 10px;
         font-family: 'Courier New', Courier, monospace;
+        font-size: 18px;
       }
       .storybutton {
-        font-size: 20px;
         padding: 3px:
         background: white;
         box-shadow: none;
         border: solid 1px;
-        margin: 0px 0px;
+        margin: 0px 1em 0px 0px;
         font-family: 'Courier New', Courier, monospace;
+        font-size: 20px;
       }
       .storybutton:hover {
         color: white;
@@ -49,6 +50,13 @@ class Aventura {
       @media screen and (max-device-width: 500px) {
         #storygeneraldiv {
           max-width:100%;
+        }
+        .storyp {
+          font-size: 7vw;
+        }
+        .storybutton {
+          background: white;
+          font-size: 10vw;
         }
       }
       `
