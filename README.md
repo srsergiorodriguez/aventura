@@ -17,7 +17,7 @@ Then, in your code, create an instance for the Aventura class, for example:
 
 The argument 'en' specifies the language that the instance will use. In this case, english. If you want to change the default language to Spanish, pass 'es' as an argument when you create an instance. If you leave the argument undefined the default language will be english. 
 
-### Index
+## Index
 * [Context Free Grammar Generative Text](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#context-free-grammar-generative-text)
 * [Interactive text based stories](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#interactive-text-based-stories)
 * [Custom options](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#custom-options)
