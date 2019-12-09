@@ -157,7 +157,7 @@ Try both and chose the interface you like the most.
 NOTE: You can pass in the id of a div element into **domAdventure** function if you want to place the interface in a particular place in your website.
 
 ### Add images!
-:surfer: If you choose **domAdventure** interface you can also add images to your scenes by specifying an image path in the *image* parameter (for the initial presentation of each scene) and *imageA* / *imageB* for the subsequent messages. All the images adapt to the size of the interface (by default, 600px).
+:surfer: If you choose **domAdventure** interface you can also add images to your scenes by specifying an image path in the *image* parameter (for the initial presentation of each scene) and *imageA* / *imageB* parameters for the subsequent messages. All the images adapt to the size of the interface (by default, 600px).
 
 
 ## Custom options
