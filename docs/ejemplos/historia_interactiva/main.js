@@ -2,7 +2,7 @@
 let escenas = {
   cover: {
     title: "La aventura del pulgar del ingeniero",
-    subtitle: "Basado en una historia de Sherlock Holmes\npor Arthur Conan Doyle"
+    subtitle: "Basado en una historia de Sherlock Holmes\npor Arthur Conan Doyle",
   },
   intro:{
     text: "A la casa de Sherlock Holmes en Baker Street llega Watson acompañado por un hombre con la mano vendada. Sherlock, interesado en el caso, los recibe y le pide al hombre, llamado Victor Hartherley, que cuente su historia:"
@@ -45,7 +45,7 @@ let escenas = {
   },
   huir: {
     text: "En esas, aparece Stark junto con otro hombre. Yo, con medio cuerpo asomado por la ventana, decido",
-    optionA: "Salir",
+    optionA: "Salir", 
     optionB: "Devolverme",
     sceneA: "end",
     sceneB: "regreso",
@@ -81,15 +81,15 @@ let escenas = {
   },
   revision: {
     text: "—Hasta el momento, todo en orden, Señor Stark -digo-. Déjeme hacer otras revisiones.\nStark asiente con la cabeza.",
-    optionA: "Revisar palancas",
+    optionA: "Revisar cilindros",
     optionB: "Revisar piso",
     sceneA: "cuestionamiento",
     sceneB: "cuestionamiento",
-    messageA: "Reviso las palancas de control, parece que por aquí todo está en orden. No obstante, es extraño que utilicen una máquina tan potente para comprimir tierra. Además, el piso es metálico y las paredes del cuarto son de madera, no es una constucción adecuada para minería.",
-    messageB: "Reviso el piso, es metálico. Además las paredes del cuarto son de madera, no es una constucción adecuada para extraer materieles."
+    messageA: "Con la lámpara de aceite reviso los cilindros laterales, veo que una de las bandas de caucho que rodea un cabezal está vencida, y eso produce una pequeña fuga de agua. Encontré el problema.\nNo obstante, es extraño que utilicen una máquina tan potente para comprimir tierra. Además, el piso es metálico y las paredes del cuarto son de madera, no es una constucción adecuada para minería.",
+    messageB: "Reviso el piso, es metálico. Además las paredes del cuarto son de madera, no es una constucción adecuada para extraer materiales, me están ocultando algo.\nMientras estoy agachado noto que hay una gotera. Son los cilintros, tienen una fuga porque una correa está dañada, encontré el problema."
   },
   cuestionamiento: {
-    text: "—Además de la correa dañada, la máquina está en buen estado —digo—.\nMe ronda por la cabeza la pregunta acerca de los fines reales de la máquina. Es claro que no la usan para comprimir tierra. Stark y su compinche no parecen de confiar.\n¿Debería preguntarles para qué quieren usar la máquina realmente?",
+    text:"—Además de la correa dañada, la máquina está en buen estado —digo—.\nMe ronda por la cabeza la pregunta acerca de los fines reales de la máquina. Es claro que no la usan para comprimir tierra. Stark y su compinche no parecen de confiar.\n¿Debería preguntarles para qué quieren usar la máquina realmente?",
     optionA: "Preguntar",
     optionB: "Disimular",
     sceneA: "pregunta",
@@ -98,7 +98,7 @@ let escenas = {
     messageB: "-Mi trabajo está cumplido. Le pido amablemente que me dé mi paga y me iré de inmediato."
   },
   pago: {
-    text: "—Aquí tiene, cincuenta guineas -dice Stark-.\nMe dispongo a contar los billetes y noto que tienen un color extraño. ¡Son falisificaciones!\n\nEn ese momento todo toma claridad para mí. Stark y su compinche imprimen billetes falsos, como los que intentan usar para pagarme, pero, como la máquina está dañada, solo pueden producir impresiones de mala calidad. \nDecido...",
+    text:"—Aquí tiene, cincuenta guineas -dice Stark-.\nMe dispongo a contar los billetes y noto que tienen un color extraño. ¡Son falisificaciones!\n\nEn ese momento todo toma claridad para mí. Stark y su compinche imprimen billetes falsos, como los que intentan usar para pagarme, pero, como la máquina está dañada, solo pueden producir impresiones de mala calidad. \nDecido...",
     optionA: "Enfrentarlos",
     optionB: "Resignarme e irme",
     sceneA: "confrontacion",
@@ -116,8 +116,8 @@ let escenas = {
     messageB: "-Reviso el cuarto, está rodeado por paredes de madera vieja. Veo que hay una luz a través de una de las láminas, es una puerta de escape."
   },
   inutil: {
-    text: "El techo se acerca cada vez más...",
-    optionA: "Gritar",
+    text:"El techo se acerca cada vez más...",
+    optionA:"Gritar",
     optionB: "Revisar el cuarto",
     sceneA: "puerta",
     sceneB: "puerta",
@@ -143,7 +143,7 @@ let escenas = {
     messageB: "Decido escapar. Stark golpea a la mujer y la tira contra el suelo. Luego, intenta agarrarme para que no baje por la ventana. Yo logro colgarme del borde y el avienta el marco de la ventana. Caigo, al suelo, casi ileso, excepto por mi pulgar, que se desprendió por el ventanazo.\nSeñor Holmes, investigue el caso, por favor, estoy seguro que si encuentran mi dedo servirá como prueba para ajusticiar a los criminales."
   },
   confrontacion: {
-    text:"Stark toma un hacha y se abalanza contra mí. Tomo un candelabro para defenderme.",
+    text: "Stark toma un hacha y se abalanza contra mí. Tomo un candelabro para defenderme.",
     optionA: "Golpear con candelabro",
     optionB: "Lanzar candelabro",
     sceneA: "end",
@@ -152,7 +152,7 @@ let escenas = {
     messageB: "Lanzo el candelabro a la cara de Stark. Pero tiene buenos reflejos y logra esquivarlo. Estoy perdido. Stark blande el hacha como un loco para todas partes. Solo atino a cubrirme, me alcanza una mano. Mi pulgar sale volando.\nStark se acerca furioso, pero pisa el pulgar y se resbala. Cae encima del hacha.\n Vengo, señor Holmes, a que me ayude a defender mi caso. No quiero que la policía piense que fue un homicidio."
   },
   end: {
-    text:"Has completado la historia... ¿Crees que pudo haber tomado un rumbo diferente? Si quieres, prueba de nuevo."
+    text: "Has completado la historia... ¿Crees que pudo haber tomado un rumbo diferente? Si quieres, prueba de nuevo."
   },
   credits: {
     text: "Este juego fue hecho por:",
