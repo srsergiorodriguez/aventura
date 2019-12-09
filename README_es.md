@@ -158,9 +158,10 @@ o
 
 Prueba las dos y escoge la que más te guste en cada circunstancia.
 
-:surfer: También puedes añadir imágenes a tus escenas, usando los parámetros *image* (para la imagen inicial de la escena) e *imageA* y *imageB* para los mensajes que se presentan luego de elegir alguna opción. Las imágenes solo se presentan usando la interfaz **domAdventure** y se ajustan al ancho general de la interfaz (por defecto, 600px).
-
 NOTA: puedes pasar como argumento el id de un elemento div en html en la función **domAdventure** si quieres que esté contenido en algún lugar particular del diseño de tu página web.
+
+### ¡Añade imágenes!
+:surfer: También puedes añadir imágenes a tus escenas usando los parámetros *image* (para la imagen inicial de la escena), e *imageA* y *imageB* (para los mensajes que se presentan luego de elegir alguna opción). Las imágenes solo se presentan usando la interfaz **domAdventure** y se ajustan al ancho general de la interfaz (por defecto, 600px).
 
 ## Opciones personalizadas
 Puedes cambiar algunas opciones si pasas un objeto de configuración cuando crear una nueva instancia de aventura:
