@@ -100,11 +100,11 @@ El objeto debe contener la estructura de las partes de tu historia:
 * y las escenas que aparecerán dependiendo de la selección (*sceneA,sceneB*).
 
 Acicionalmente, el objeto debe contener un set especial de escenas:
-* una portada (*cover*) -> que especifica el título y el subtítulo de la historia (*title,subtitle*))
+* una portada (*cover*) -> que especifica el título y el subtítulo de la historia (*title,subtitle*)
 * una introducción (*intro*) -> que especifica el texto que servirá como exposición inicial a la historia (*text*)
 * un inicio (*start*) -> la primera escena de tu aventura
 * un final (*end*) -> que especifica el texto que aparecerá cuando termine la aventura (*text*). Por ejemplo, un *call-to-action* que invite a jugar de nuevo (¡Vuelve a intentarlo!)
-* y unos créditos (*credits*) -> information sobre los autores y el año en el que se creo la aventura (*text,authors,year*)
+* y unos créditos (*credits*) -> información sobre los autores y el año en el que se creó la aventura (*text,authors,year*)
 
 Por ejemplo:
 
