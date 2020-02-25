@@ -124,7 +124,7 @@ let escenas = {
     sceneA:"avellanacomida",
     sceneB:"end",
     messageA: "La ardilla se come la avellana.",
-    messageB: "La ardilla guarda la avellana. ¡Una movida inteligente! Porque, tiempo después, en invierno, volió a encontrarla y pudo comerla cuando tenía hambre."
+    messageB: "La ardilla guarda la avellana. ¡Una movida inteligente! Porque, tiempo después, en invierno, volvió a encontrarla y pudo comerla cuando tenía hambre."
   },
   avellanacomida: {
     text:"Cuando llegó el invierno la ardilla no encontró avellanas para comer. Entonces, ¿qué debería comer?",
