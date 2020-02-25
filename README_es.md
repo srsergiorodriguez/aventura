@@ -59,7 +59,7 @@ Intenta crear reglas más complejas. ¡Tu imaginación es el límite! ...y el po
 
 ### Opciones avanzadas
 #### Transformar el texto terminal
-Convenientemente, puedes aplicar algunas transformaciones al texto que se desenvuelve en símbolos terminales. Por ejemplo, puedes poner en mayúsculas la primera letra de la cadena de texto de algún súmbolo o puedes poner en mayúsculas todas sus letras. Si es el caso, las tranformaciones se deben indicar dentro de un par de numerales '#' luego del nombre del símbolo (si quieres poner varias transformaciones, sepáralas con comas):
+Convenientemente, puedes aplicar algunas transformaciones al texto que se desenvuelve en símbolos terminales. Por ejemplo, puedes poner en mayúsculas la primera letra de la cadena de texto de algún símbolo o puedes poner en mayúsculas todas sus letras. Si es el caso, las tranformaciones se deben indicar dentro de un par de numerales '#' luego del nombre del símbolo (si quieres poner varias transformaciones, sepáralas con comas):
 
 ```
 let gramatica = {
