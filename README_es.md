@@ -44,7 +44,7 @@ let gramatica = {
 }
 ```
 
-Luego de que crear la variable, tienes que pasarla como un argumento a tu instancia de aventura usando la función **'setGrammar'**:
+Luego de que crear la gramática, tienes que pasarla como un argumento a tu instancia de aventura usando la función **'setGrammar'**:
 
 `aventura.setGrammar(gramatica);`
 
