@@ -90,9 +90,9 @@ let textoGenerado = aventura.developGrammar('frase');
 ```
 
 ## Historias interactivas basadas en texto :squirrel:
-Aventura te permite crear historias interactivas basadas en texto inspiradas en aventuras de texto clásicas como Zork, en donde debes ingresar decisiones al programa para avanzar en la historia. Con Aventura creas **historias de decisión binaria**, es decir, historias en donde debes decidir entre dos opcions en cada momento y, como resultado de tu decisión, la historia toma diferentes caminos.
+Aventura te permite crear historias interactivas basadas en texto inspiradas en aventuras de texto clásicas como Zork, en donde debes ingresar decisiones al programa para avanzar en la historia. Con Aventura creas **historias de decisión binaria**, es decir, historias en donde debes decidir entre dos opciones en cada momento y, como resultado de tu decisión, la historia toma diferentes caminos.
 
-Para crear una historia interactiva debes pasar un objeto con las escenes de tu historia a la función **'setScenes'**. 
+Para crear una historia interactiva debes pasar un objeto con las escenas de tu historia a la función **'setScenes'**. 
 El objeto debe contener la estructura de las partes de tu historia: 
 * el texto inicial (*text*)
 * las opciones que se pueden escoger (*optionA,optionB*)
