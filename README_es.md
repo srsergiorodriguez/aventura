@@ -32,7 +32,7 @@ Piensa que una gramática es como un árbol: empiezas en el tronco y luego elige
 En Aventura, una gramática se estructura como un objeto que contiene un set de reglas en forma de arrays. Tales reglas contienen **cadenas de texto convencional**, **símbolos 'terminales'** (o sea, símbolos que apuntan a inventarios de palabras o frases que reemplazan el símbolo), o **variables 'no-terminales'** (o sea, inventarios de reglas que reemplazan las variables).
 Así, las reglas también pueden ser terminales o no-terminales.
 
-Dentro de las reglas peudes referenciar símbolos y variables usando etiquetas rodeadas de paréntesis angulares: `<etiqueta>`.
+Dentro de las reglas puedes referenciar símbolos y variables usando etiquetas rodeadas de paréntesis angulares: `<etiqueta>`.
 
 Este es un ejemplo de una gramática muy simple:
 
