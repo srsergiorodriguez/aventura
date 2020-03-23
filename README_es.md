@@ -82,7 +82,7 @@ Puedes crear nuevas reglas mientras tu gramática se desenvuelve. Esto es útil 
 let gramatica = {
     frase: ["$heroe$<nombre:animal,atributo:adjetivo>Esta es la historia de una <heroe.nombre>. Debes saber que la <heroe.nombre> fue muy <heroe.atributo>"],
     animal: ["gata","jirafa","ardilla"],
-    adjective: ["valiente","poderosa","inteligente"]
+    adjetivo: ["valiente","poderosa","inteligente"]
 }
 aventura.setGrammar(gramatica);
 let textoGenerado = aventura.developGrammar('frase');
