@@ -241,7 +241,7 @@ Algunas implementaciones que quisiera añadir en el futuro son:
 * <del>Añadir la posibilidad de incluir imágenes a las historias interactivas</del>
 * Añadir una transformación que pluralice palabras, tanto en inglés como español
 * Añadir una transformación que conjugue verbos, tanto en inglés como español
-* Añadir lrobabilidades de que ese escojan ciertas reglas cuando se desenvuelve una gramática
+* Añadir probabilidades de que ese escojan ciertas reglas cuando se desenvuelve una gramática
 * Hacer más eficiente y fácil de usar la función de cambiar el estilo css
 * Añadir una interfaz simple que permita mostrar texto generativo
 
