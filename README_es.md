@@ -150,15 +150,17 @@ aventura.setScenes(escenas);
 
 Luego de haber definido tus escenas, Aventura te permite escoger una de dos opciones: mostrar tu aventura en cuadros de texto del navegador (usando la función **'promptAdventure'**), o mostrar tu historia en una interfaz html muy simple con un poco de estilo css (usando la función **'domAdventure'**). En cualquier caso, es muy fácil escoger alguna interfaz:
 
-`adventure.promptAdventure(); // la interfaz con cuadro de texto`
+`aventura.promptAdventure(); // la interfaz con cuadro de texto`
 
 o
 
-`adventure.domAdventure(); // la interfaz en html`
+`aventura.domAdventure(); // la interfaz en html`
 
 Prueba las dos y escoge la que más te guste en cada circunstancia.
 
-NOTA: puedes pasar como argumento el id de un elemento div en html en la función **domAdventure** si quieres que esté contenido en algún lugar particular del diseño de tu página web.
+NOTA: puedes pasar como argumento el id de un elemento div en html en la función **domAdventure** si quieres que esté contenido en algún lugar particular del diseño de tu página web, algo así:
+
+`aventura.domAdventure('#midiv');`
 
 ### ¡Añade imágenes!
 :surfer: También puedes añadir imágenes a tus escenas usando los parámetros *image* (para la imagen inicial de la escena), e *imageA* y *imageB* (para los mensajes que se presentan luego de elegir alguna opción). Las imágenes solo se presentan usando la interfaz **domAdventure** y se ajustan al ancho general de la interfaz (por defecto, 600px).
