@@ -6,8 +6,7 @@ class Aventura {
   Released under MIT License
   */
   constructor(lang = 'en',options) {
-    this.lang = (lang === 'en' || lang === 'es') ? lang : undefined;
-    if (!this.lang) {console.log('Incorrect language / lenguaje incorrecto')}
+    this.lang = (lang === 'en' || lang === 'es') ? lang : 'en';
     this.options = {
       typewriterSpeed: 50,
       style: `
@@ -73,8 +72,7 @@ class Aventura {
   }
 
   promptAdventure() {
-    if (this.lang === undefined) {console.log("Tura.js: Language undefined / lenguaje indefinido");return}
-    document.title = this.scenes.cover.title.toUpperCase();
+    document.title = this.scenes.cover.title.toUpperCase(); // Change the title of html page to adventure name
     alert(`${this.scenes.cover.title.toUpperCase()}\n${this.scenes.cover.subtitle}`);
     alert(this.scenes.intro.text);
     this.goToScene_prompt(this.scenes.start);
@@ -84,9 +82,7 @@ class Aventura {
     const endAdventure = function(e) {
       alert(e.end.text);
       let credits = e.credits.text;
-      for (let a in e.credits.authors) {
-        credits+=`\n${e.credits.authors[a]}`;
-      }
+      for (let a in e.credits.authors){credits+=`\n${e.credits.authors[a]}`}
       credits+=`\n${e.credits.year}`
       alert(credits);
     }
@@ -253,6 +249,7 @@ class Aventura {
   }
 
   selectGrammarRule(array) {
+    // Pick a random rule from an array of rules
     let string =  array[Math.floor(Math.random()*array.length)];
     return string
   }
@@ -263,6 +260,7 @@ class Aventura {
   }
 
   defineTransformations(rule) {
+    // Define which transformations must be applied to the string
     let transformations = {
       capitalize: false,
       allcaps: false 
@@ -270,9 +268,9 @@ class Aventura {
     let transformationList = rule.match(/#[a-zA-Z1-9,]+#/g);
     if (!transformationList) {
       return transformations 
-    } 
+    }
     transformationList = transformationList[0].replace(/[#]/g,"");
-    transformationList = transformationList.match(/[A-Z]+/g);
+    transformationList = transformationList.match(/[A-Z]+/gi);
     for (let i=0;i<transformationList.length;i++) {
       transformations[transformationList[i].toLowerCase()] = true;
     }
@@ -292,17 +290,17 @@ class Aventura {
   }
 
   grammarRuleRecursion(string) {
-    string = this.setNewRule(string);
-    const ruleList = string.match(/<[a-zA-Z1-9.,/#]+>/gi);
-    if (!ruleList) {return string}
+    string = this.setNewRule(string); // Clean string from recursive rules
+    const ruleList = string.match(/<[a-zA-Z1-9.,_/#]+>/gi); // Create a list of rules to be developed from the string
+    if (!ruleList) {return string} // Return the string if there are no new rules to develop
     for (let i=0;i<ruleList.length;i++) {
       const transformations = this.defineTransformations(ruleList[i]);
       string = string.replace(ruleList[i],()=>{
-        ruleList[i] = ruleList[i].replace(/[<>]/gi,"");
-        ruleList[i] = ruleList[i].replace(/#[a-zA-Z1-9.,/]+#/g,"");
+        ruleList[i] = ruleList[i].replace(/[<>]/gi,""); // delete <> symbols
+        ruleList[i] = ruleList[i].replace(/#[a-zA-Z1-9.,_/]+#/g,""); // delete transformation definition
         if (ruleList[i].search(/[.]/)>-1) {
           // if there is a path for a rule
-          const pathList = ruleList[i].match(/[a-zA-Z1-9]+/g,"");
+          const pathList = ruleList[i].match(/[a-zA-Z1-9_]+/g,"");
           const preTransformed = this.selectGrammarRule(this.getNestedObject(this.grammar,pathList));
           return this.transformString(preTransformed,transformations);
         } else {
@@ -316,18 +314,21 @@ class Aventura {
   }
 
   setNewRule(string) {
+    // Check if there are recursive rules in a string and add them to the grammar
+    // Return the string without recursive rules
     let str = string;
-    let rule = str.match(/\$[a-zA-Z1-9]+\$<[a-zA-Z1-9:,]+>/g);
+    let rule = str.match(/\$[a-zA-Z1-9_]+\$<[a-zA-Z1-9:,_]+>/g);
     if (rule) {
       while (rule.length) {
-        let tempfixed = rule.pop();
-        str = str.replace(tempfixed,"");
-        const symbol = tempfixed.match(/\$[a-zA-Z1-9]+\$/gi)[0].replace(/\$/g,"");
-        const pairs =  tempfixed.match(/<[a-zA-Z1-9:,]+>/gi)[0].match(/[a-zA-Z1-9]+:[a-zA-Z1-9]+/gi);
-        const keys =  pairs.map(d=>d.replace(/:[a-zA-Z1-9,]+/,""));
-        const values =  pairs.map(d=>d.replace(/[a-zA-Z1-9]+:/,""));
+        let tempfixed = rule.pop(); // remove top rule from rule list
+        str = str.replace(tempfixed,""); // remove rule text string from original string
+        const symbol = tempfixed.match(/\$[a-zA-Z1-9_]+\$/gi)[0].replace(/\$/g,""); // remove $ from symbol name and get symbol
+        const pairs =  tempfixed.match(/<[a-zA-Z1-9:,_]+>/gi)[0].match(/[a-zA-Z1-9_]+:[a-zA-Z1-9_]+/gi); // get all pairs of key-value
+        const keys =  pairs.map(d=>d.replace(/:[a-zA-Z1-9,_]+/,"")); // get all keys in an array
+        const values =  pairs.map(d=>d.replace(/[a-zA-Z1-9]+:/,"")); // get all values in an array
         this.grammar[symbol] = this.grammar[symbol] ? this.grammar[symbol] : {};
         if (keys && values) {
+          // asign key-value pairs to symbol
           for (let i=0;i<keys.length;i++) {
             this.grammar[symbol][keys[i]] = [this.selectGrammarRule(this.grammar[values[i]])];
           }
