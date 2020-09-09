@@ -2,7 +2,7 @@ class Aventura {
   /*
   Aventura.js 1.1
   A library of biterature
-  Copyright (c) 2019 Sergio Rodríguez Gómez / https://meanmeaning.com
+  Copyright (c) 2020 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
   Released under MIT License
   */
   constructor(lang = 'en',options) {
