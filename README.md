@@ -244,6 +244,6 @@ V.1.1
 
 (c) Sergio Rodríguez Gómez
 
-2019
+2019-2020
 
 Released under [MIT License](https://github.com/srsergiorodriguez/aventura/blob/master/LICENSE)
