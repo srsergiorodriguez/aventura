@@ -18,8 +18,8 @@ Luego, en tu código, crea una instancia de la clase Aventura, y, para que la li
 (si quieres usar la librería con textos en inglés pasa la string 'en' como argumento).
 
 ### Índice
-* [Texto generativo con Gramática libre de contexto](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#texto-generativo-con-gram%C3%A1tica-libre-de-contexto)
-* [Historias interactivas basadas en texto](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#historias-interactivas-basadas-en-texto)
+* [Texto generativo con Gramática libre de contexto](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#texto-generativo-con-gram%C3%A1tica-libre-de-contexto-monkey)
+* [Historias interactivas basadas en texto](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#historias-interactivas-basadas-en-texto-alien)
 * [Opciones personalizadas](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#opciones-personalizadas)
 * [Ejemplos](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#ejemplos)
 * [Ayuda a mejorar esta librería](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#ayuda-a-mejorar-esta-librer%C3%ADa)
@@ -89,7 +89,7 @@ let textoGenerado = aventura.developGrammar('frase');
 // Un resultado posible puede ser: "Esta es la historia de una gata. Debes saber que la gata fue muy valiente"
 ```
 
-## Historias interactivas basadas en texto :squirrel:
+## Historias interactivas basadas en texto :alien:
 Aventura te permite crear historias interactivas basadas en texto inspiradas en aventuras de texto clásicas como Zork, en donde debes ingresar decisiones al programa para avanzar en la historia. Con Aventura creas **historias de decisión binaria**, es decir, historias en donde debes decidir entre dos opciones en cada momento y, como resultado de tu decisión, la historia toma diferentes caminos.
 
 Para crear una historia interactiva debes pasar un objeto con las escenas de tu historia a la función **'setScenes'**. 
