@@ -246,6 +246,9 @@ Algunas implementaciones que quisiera añadir en el futuro son:
 * Añadir probabilidades de que se escojan ciertas reglas cuando se desenvuelve una gramática
 * Hacer más eficiente y fácil de usar la función de cambiar el estilo css
 * Añadir una interfaz simple que permita mostrar texto generativo
+* Añadir a la documentación un tutorial de buenas prácticas para diseñar gramáticas e historias (recomendaciones)
+* Crear una interfaz gráfica para diseñar las gramáticas y las historias de forma no líneal (como un árbol) que sea utilizable y exportable
+* Buscar maneras de crear funciones que combinen las gramáticas y las historias interactivas
 
 ## Versión, licencia y copyright
 V.1.1
