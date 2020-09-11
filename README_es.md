@@ -19,11 +19,11 @@ Luego, en tu código, crea una instancia de la clase Aventura, y, para que la li
 
 ### Índice
 * [Texto generativo con Gramática libre de contexto](#texto-generativo-con-gram%C3%A1tica-libre-de-contexto-monkey)
-* [Historias interactivas basadas en texto](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#historias-interactivas-basadas-en-texto-alien)
-* [Opciones personalizadas](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#opciones-personalizadas)
-* [Ejemplos](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#ejemplos)
-* [Ayuda a mejorar esta librería](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#ayuda-a-mejorar-esta-librer%C3%ADa)
-* [Versión, licencia y copyright](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md#versi%C3%B3n-licencia-y-copyright)
+* [Historias interactivas basadas en texto](#historias-interactivas-basadas-en-texto-alien)
+* [Opciones personalizadas](#opciones-personalizadas)
+* [Ejemplos](#ejemplos)
+* [Ayuda a mejorar esta librería](#ayuda-a-mejorar-esta-librer%C3%ADa)
+* [Versión, licencia y copyright](#versi%C3%B3n-licencia-y-copyright)
 
 ## Texto generativo con Gramática libre de contexto :monkey:
 Aventura te permite generar texto si defines una gramática y la desenvuelves. Es decir, si recorres un camino posible dentro de la estructura de la gramática y, como resultado, generas una cadena de texto (que idealmente será diferente cada vez que desenvuelvas tu gramática).
@@ -233,7 +233,7 @@ Te recomiendo tomar como referencia el estilo original y adaptarlo a tu gusto:
 ## Ejemplos
 * Un ejemplo de un generador de poemas: [Demostración](https://srsergiorodriguez.github.io/autopoeta/) / [Gramática](https://github.com/srsergiorodriguez/autopoeta/blob/master/docs/assets/autopoetadb.json)
 
-* Un ejemplo de una historia interactiva basada en una historia de Sherlock Holmes: [Demostración](https://srsergiorodriguez.github.io/aventura/ejemplos/historia_interactiva/) / [Código](https://github.com/srsergiorodriguez/aventura/blob/master/docs/ejemplos/historia_interactiva/main.js)
+* Un ejemplo de una historia interactiva basada en una historia de Sherlock Holmes: [Demostración](/ejemplos/historia_interactiva/) / [Código](/docs/ejemplos/historia_interactiva/main.js)
 
 ## Ayuda a mejorar esta librería
 Todas las sugerencias y contribuciones son bienvenidas.
@@ -260,4 +260,4 @@ V.1.1
 
 2019 - 2020
 
-Esta librería está amparada bajo una [licencia MIT](https://github.com/srsergiorodriguez/aventura/blob/master/LICENSE)
+Esta librería está amparada bajo una [licencia MIT](/LICENSE)
