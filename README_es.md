@@ -250,6 +250,9 @@ Algunas implementaciones que quisiera añadir en el futuro son:
 * Crear una interfaz gráfica para diseñar las gramáticas y las historias de forma no líneal (como un árbol) que sea utilizable y exportable
 * Buscar maneras de crear funciones que combinen las gramáticas y las historias interactivas
 
+## Colaboradores
+@perropulgoso
+
 ## Versión, licencia y copyright
 V.1.1
 
