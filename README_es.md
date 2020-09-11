@@ -233,7 +233,7 @@ Te recomiendo tomar como referencia el estilo original y adaptarlo a tu gusto:
 ## Ejemplos
 * Un ejemplo de un generador de poemas: [Demostración](https://srsergiorodriguez.github.io/autopoeta/) / [Gramática](https://github.com/srsergiorodriguez/autopoeta/blob/master/docs/assets/autopoetadb.json)
 
-* Un ejemplo de una historia interactiva basada en una historia de Sherlock Holmes: [Demostración](/ejemplos/historia_interactiva/) / [Código](/docs/ejemplos/historia_interactiva/main.js)
+* Un ejemplo de una historia interactiva basada en una historia de Sherlock Holmes: [Demostración](https://srsergiorodriguez.github.io/aventura/ejemplos/historia_interactiva/) / [Código](/docs/ejemplos/historia_interactiva/main.js)
 
 ## Ayuda a mejorar esta librería
 Todas las sugerencias y contribuciones son bienvenidas.
