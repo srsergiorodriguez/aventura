@@ -254,7 +254,7 @@ Algunas implementaciones que quisiera añadir en el futuro son:
 @perropulgoso
 
 ## Versión, licencia y copyright
-V.1.1
+V.1.1.0
 
 (c) Sergio Rodríguez Gómez
 
