@@ -240,7 +240,7 @@ TODO LIST — some implementations I want to add in the future are:
 * Add a simple interface to display generative text
 
 ## Version, license and copyright
-V.1.1
+V.1.1.0
 
 (c) Sergio Rodríguez Gómez
 
