@@ -325,7 +325,7 @@ class Aventura {
         const symbol = tempfixed.match(/\$[a-zA-Z1-9_]+\$/gi)[0].replace(/\$/g,""); // remove $ from symbol name and get symbol
         const pairs =  tempfixed.match(/<[a-zA-Z1-9:,_]+>/gi)[0].match(/[a-zA-Z1-9_]+:[a-zA-Z1-9_]+/gi); // get all pairs of key-value
         const keys =  pairs.map(d=>d.replace(/:[a-zA-Z1-9,_]+/,"")); // get all keys in an array
-        const values =  pairs.map(d=>d.replace(/[a-zA-Z1-9]+:/,"")); // get all values in an array
+        const values =  pairs.map(d=>d.replace(/[a-zA-Z1-9_]+:/,"")); // get all values in an array
         this.grammar[symbol] = this.grammar[symbol] ? this.grammar[symbol] : {};
         if (keys && values) {
           // asign key-value pairs to symbol
