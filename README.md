@@ -26,7 +26,7 @@ The argument 'en' specifies the language that the instance will use. In this cas
     - [Advanced options](#advanced-options)
       - [Transforming terminal text](#transforming-terminal-text)
       - [Setting new rules](#setting-new-rules)
-  - [Interactive text based stories :squirrel:](#interactive-text-based-stories-squirrel)
+  - [Interactive text based stories :alien:](#interactive-text-based-stories-alien)
     - [Add images!](#add-images)
   - [Custom options](#custom-options)
       - [Changing typewriter speed](#changing-typewriter-speed)
@@ -95,7 +95,7 @@ let generatedText = adventure.developGrammar('phrase');
 // A possible result could be: "This is the story of dog. You must know that dog was a very brave hero"
 ```
 
-## Interactive text based stories :squirrel:
+## Interactive text based stories :alien:
 Aventura lets you create interactive text stories inspired by classic text adventures like Zork, where you have to input decisions into a prompt to advance the story. In Aventura you can create **binary decision stories**, namely, stories where you must choose between two options each time and, as a result, the story takes different paths depending on your decisions. 
 
 For creating an interactive story you must pass an object as argument into **'setScenes'** function. Such object must contain the structure of the scenes of your story: 
