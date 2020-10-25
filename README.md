@@ -7,7 +7,7 @@ For a reference in Spanish... para una referencia en español: [click here / cli
 This is a library that lets you create generative text using [Context Free Grammars](https://en.wikipedia.org/wiki/Context-free_grammar "Context Free Grammar") and [interactive stories](https://en.wikipedia.org/wiki/Interactive_fiction "Interactive fiction") similar to classic text based adventures (see, for example, [Zork](https://en.wikipedia.org/wiki/Zork "Zork")). Aventura is intended to be a creative coding library for exploring "biterature" or computer generated literary texts. Even though it is simple, you can create complex texts or stories that branch multiple generative possibilities.
 
 ## How to use
-Just download the [minified library](https://github.com/srsergiorodriguez/aventura/blob/master/minified/aventura.min.js) to your project, and add a script tag referencing the minified library to your .html document, like this:
+Just download the [minified library](docs/minified/aventura.min.js) to your project, and add a script tag referencing the minified library to your .html document, like this:
 
 `<script src="aventura.min.js></script>`
 
@@ -18,11 +18,21 @@ Then, in your code, create an instance for the Aventura class, for example:
 The argument 'en' specifies the language that the instance will use. In this case, English. If you want to change the default language to Spanish, pass 'es' as an argument when you create an instance. If you leave the argument undefined the default language will be english. 
 
 ## Index
-* [Context Free Grammar Generative Text](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#context-free-grammar-generative-text)
-* [Interactive text based stories](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#interactive-text-based-stories)
-* [Custom options](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#custom-options)
-* [Help to improve this library](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#help-to-improve-this-library)
-* [Version, license and copyright](https://github.com/srsergiorodriguez/aventura/blob/master/README.md#version-license-and-copyright)
+- [Aventura :loop:](#aventura-loop)
+  - [About](#about)
+  - [How to use](#how-to-use)
+  - [Index](#index)
+  - [Context Free Grammar Generative Text :monkey:](#context-free-grammar-generative-text-monkey)
+    - [Advanced options](#advanced-options)
+      - [Transforming terminal text](#transforming-terminal-text)
+      - [Setting new rules](#setting-new-rules)
+  - [Interactive text based stories :squirrel:](#interactive-text-based-stories-squirrel)
+    - [Add images!](#add-images)
+  - [Custom options](#custom-options)
+      - [Changing typewriter speed](#changing-typewriter-speed)
+      - [Overriding the style of domAdventure](#overriding-the-style-of-domadventure)
+  - [Help to improve this library](#help-to-improve-this-library)
+  - [Version, license and copyright](#version-license-and-copyright)
 
 ## Context Free Grammar Generative Text :monkey:
 Aventura lets you generate text by defining a grammar and by developing it. Namely, traversing a possible path inside the structure of the grammar and, as a result, generating each time a different string of text (ideally!).
@@ -246,4 +256,4 @@ V.1.1.0
 
 2019-2020
 
-Released under [MIT License](https://github.com/srsergiorodriguez/aventura/blob/master/LICENSE)
+Released under [MIT License](/LICENSE)

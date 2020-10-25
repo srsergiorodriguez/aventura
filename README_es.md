@@ -7,7 +7,7 @@ Para leer la referencia en inglés... For a reference in english: [clic aquí / 
 Esta es una librería que te permite crear texto de forma generativa usando [Gramática libre de contexto](https://es.wikipedia.org/wiki/Gram%C3%A1tica_libre_de_contexto "Gramática libre de contexto") e [historias interactivas](https://es.wikipedia.org/wiki/Aventura_conversacional "FJuegos conversacionales") similares a las aventuras basadas en texto clásicas (por ejemplo, el juego [Zork](https://es.wikipedia.org/wiki/Zork "Zork")). Aventura tiene el propósito de ser una librería de programación creativa para explorar la "biteratura" o los textos literarios generados por computador. Aunque es simple, con ella puedes crear textos o historias complejas que se dividen en múltiples posibilidades generativas.
 
 ## Cómo usarla
-Solo descarga la [librería minificada](minified/aventura.min.js), y añade una etiqueta de script a tu documento .html, así:
+Solo descarga la [librería minificada](docs/minified/aventura.min.js), y añade una etiqueta de script a tu documento .html, así:
 
 `<script src="aventura.min.js></script>`
 
@@ -18,12 +18,23 @@ Luego, en tu código, crea una instancia de la clase Aventura, y, para que la li
 (si quieres usar la librería con textos en inglés pasa la string 'en' como argumento).
 
 ### Índice
-* [Texto generativo con Gramática libre de contexto](#texto-generativo-con-gram%C3%A1tica-libre-de-contexto-monkey)
-* [Historias interactivas basadas en texto](#historias-interactivas-basadas-en-texto-alien)
-* [Opciones personalizadas](#opciones-personalizadas)
-* [Ejemplos](#ejemplos)
-* [Ayuda a mejorar esta librería](#ayuda-a-mejorar-esta-librer%C3%ADa)
-* [Versión, licencia y copyright](#versi%C3%B3n-licencia-y-copyright)
+- [Aventura :loop:](#aventura-loop)
+  - [Acerca](#acerca)
+  - [Cómo usarla](#cómo-usarla)
+    - [Índice](#índice)
+  - [Texto generativo con Gramática libre de contexto :monkey:](#texto-generativo-con-gramática-libre-de-contexto-monkey)
+    - [Opciones avanzadas](#opciones-avanzadas)
+      - [Transformar el texto terminal](#transformar-el-texto-terminal)
+      - [Crear nuevas reglas](#crear-nuevas-reglas)
+  - [Historias interactivas basadas en texto :alien:](#historias-interactivas-basadas-en-texto-alien)
+    - [¡Añade imágenes!](#añade-imágenes)
+  - [Opciones personalizadas](#opciones-personalizadas)
+      - [Cambiar la velocidad de la máquina de escribir](#cambiar-la-velocidad-de-la-máquina-de-escribir)
+      - [Sobreescribir el estilo de domAdventure](#sobreescribir-el-estilo-de-domadventure)
+  - [Ejemplos](#ejemplos)
+  - [Ayuda a mejorar esta librería](#ayuda-a-mejorar-esta-librería)
+  - [Colaboradores](#colaboradores)
+  - [Versión, licencia y copyright](#versión-licencia-y-copyright)
 
 ## Texto generativo con Gramática libre de contexto :monkey:
 Aventura te permite generar texto si defines una gramática y la desenvuelves. Es decir, si recorres un camino posible dentro de la estructura de la gramática y, como resultado, generas una cadena de texto (que idealmente será diferente cada vez que desenvuelvas tu gramática).
