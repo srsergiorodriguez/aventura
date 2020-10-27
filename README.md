@@ -7,7 +7,7 @@ For a reference in Spanish... para una referencia en español: [click here / cli
 This is a library that lets you create generative text using [Context Free Grammars](https://en.wikipedia.org/wiki/Context-free_grammar "Context Free Grammar") and [interactive stories](https://en.wikipedia.org/wiki/Interactive_fiction "Interactive fiction") similar to classic text based adventures (see, for example, [Zork](https://en.wikipedia.org/wiki/Zork "Zork")). Aventura is intended to be a creative coding library for exploring "biterature" or computer generated literary texts. Even though it is simple, you can create complex texts or stories that branch multiple generative possibilities.
 
 ## How to use
-Just download the [minified library](docs/minified/aventura.min.js) to your project, and add a script tag referencing the minified library to your .html document, like this:
+Just download the [minified library](docs/minified/aventura.min.js) into your project, and add a script tag referencing the minified library to your .html document, like this:
 
 `<script src="aventura.min.js></script>`
 
