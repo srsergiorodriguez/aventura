@@ -241,7 +241,7 @@ Así, Aventura te mostrará el origen de tu error en la consola con un mensaje c
 
 Esto quiere decir que tengo que revisar si escribí mal el nombre de la escena o si no existe la escena que estoy referenciando. En el caso del ejemplo, para la escena referenciada en 'introduccion' falta una letra, porque la escena se llama 'inicio'.
 
-:exclamation: Si, intencionalmente, quieres que una escena no lleve a ningún lado (como puede ser el caso con una escena final), para evitar el mensaje de error pon lo siguente en los parámetros de la escena: `deadEnd: true`.
+:exclamation: Si, intencionalmente, quieres que una escena no lleve a ningún lado (como puede ser el caso con una escena final), para evitar el mensaje de error pon lo siguiente en los parámetros de la escena: `deadEnd: true`.
 
 ### Historias interactivas - opciones avanzadas
 
@@ -278,7 +278,7 @@ const escenas = {
 ```
 
 #### Usar texto generativo en las historias
-Esto es una función poderosa, puedes combinar el texto generativo que produces con una gramática junto con el desarrollo de tu historia. Para hacerlo, debes primero pasar tanto una gramática a tu instancia de Aventura como tus escenas. Así, tus escenas pueden contener *strings* que incluyen referencias a las gramáticas. Aunque esto complica las cosas, es muy útil para crear historias en las que las decisiones de tus lectores no solo afectan el desarrollo de la historia sino que también modifican el propio texto que leerán en las escenas, sea porque se genera uno nuevo con cada nueva ejecución de la historia, sea porque las propias decisiones crean nuevas reglas dentro de la gramática. Para entenderlo mejor, aquí dejo un ejemplo concreto:
+Esto es una función poderosa, puedes combinar el texto generativo que produces con una gramática junto con el desarrollo de tu historia. Para hacerlo, debes primero pasar tanto una gramática a tu instancia de Aventura como tus escenas. Así, tus escenas pueden contener *strings* que incluyen referencias a las reglas de la gramática. Aunque esto complica las cosas, es muy útil para crear historias en las que las decisiones de tus lectores no solo afectan el desarrollo de la historia sino que también modifican el propio texto que leerán en las escenas, sea porque se genera uno nuevo con cada nueva ejecución de la historia, sea porque las propias decisiones crean nuevas reglas dentro de la gramática. Para entenderlo mejor, aquí dejo un ejemplo concreto:
 
 ```
 const gramatica = {
@@ -306,19 +306,17 @@ Una historia increíble`,
       {
         button:"Verde",
         scene: "fin",
-        text: "$ardilla$<color:verde>Por supuesto, de color <ardilla.color>",
-        image: "./assets/squirrel1.jpg"
+        text: "$ardilla$<color:verde>Por supuesto, de color <ardilla.color>"
       },
       {
         button:"Azul",
         scene: "fin",
-        text: "$ardilla$<color:azul>Por supuesto, de color <ardilla.color>",
-        image: "./assets/squirrel2.jpg"
+        text: "$ardilla$<color:azul>Por supuesto, de color <ardilla.color>"
       },
       {
         button:"Amarillo",
         scene: "fin",
-        text: "$ardilla$<color:amarillo>Por supuesto, de color <ardilla.color>",
+        text: "$ardilla$<color:amarillo>Por supuesto, de color <ardilla.color>"
       }
     ]
   },
@@ -457,7 +455,6 @@ Historia interactiva:
 {
   text: texto,
   ?image: imagen,
-  ?deadEnd: escenaFinal
   options: [
     {
       button: textoBoton,
