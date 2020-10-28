@@ -135,7 +135,7 @@ const gramatica = {
     frase: ["<animal#ALLCAPS#>"],
     animal: ["gato","jirafa","ardilla"]
 }
-const textoGenerado = aventura.setGrammar(gramatica).developGrammar('frase';
+const textoGenerado = aventura.setGrammar(gramatica).developGrammar('frase');
 // Un resultado posible puede ser: "ARDILLA"
 ```
 
@@ -144,7 +144,7 @@ En el momento, las tranformaciones posibles son:
 * Todas las letras en mayúscula: ALLCAPS
 
 #### Crear nuevas reglas
-Puedes crear nuevas reglas mientras tu gramática se desenvuelve. Esto es útil para fijar reglas que quieres producir generativamente pero que además usarás recurrentemente en tu nuevo texto. Por ejemplo, piensa en un personaje que aparece varias veces en una historia; quieres que su nombre se decida a partir de una lista de opciones, pero también quieres que, una vez se haya elegido al comienzo de la historia, se siga usando consistentemente en el resto de la historia. Las reglas nuevas se crean definiendo un nuevo nombre para la regla (encerrado en `$`), seguido de un set de subreglas, encerradas en paréntesis angulares. Cada subregla debe especificarse en pares de clave-valor, y el conjunto de subreglas deben separarse por comas:
+Puedes crear nuevas reglas mientras tu gramática se expande. Esto es útil para fijar reglas que quieres producir generativamente pero que además usarás recurrentemente en tu nuevo texto. Por ejemplo, piensa en un personaje que aparece varias veces en una historia; quieres que su nombre se decida a partir de una lista de opciones, pero también quieres que, una vez se haya elegido al comienzo de la historia, se siga usando consistentemente en el resto de la historia. Las reglas nuevas se crean definiendo un nuevo nombre para la regla (encerrado en `$`), seguido de un set de subreglas, encerradas en paréntesis angulares. Cada subregla debe especificarse en pares de clave-valor, y el conjunto de subreglas deben separarse por comas:
 
 ```
 const gramatica = {
