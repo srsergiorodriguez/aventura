@@ -178,6 +178,7 @@ const escenas = {
   },
   final {
     text: "Parece que la historia tomó una elipsis"
+    deadEnd: true
   }
 }
 ```
@@ -214,10 +215,12 @@ const escenas = {
     ]
   },
   final1 {
-    text: "Parece que la historia tomó una elipsis"
+    text: "Parece que la historia tomó una elipsis",
+    deadEnd: true
   }
   final2 {
     text: "Perfecto, un final redondo"
+    deadEnd: true
   }
 }
 ```
