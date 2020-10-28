@@ -3,16 +3,6 @@ Aventura v2.0.1
 A library of biterature
 Copyright (c) 2020 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
 Released under MIT License
-
-RELEASE NOTES:
-- Intensive refactoring in this new release
-- Now, for Dom adventure, you choose if you want to use the default css styling or not in the options when the Aventura object is created (no need to pass a string with css in domAdventure);
-- Fixed a bug that dind'nt allowed to put a domAdventure into an html element container
-- Not found rules are now logged in the console in error messages for better debugging
-- Now the adventure supports redirection to more than two scenes from button options. Such options must be defined now in an array of objects (this is what makes this version incompatible with the previous release)
-- Due to the latter change, there are not predefined scenes (like cover, intro, end, or credits). Scenes with a continue button can be created by pasing a scene without options; this allows for the creation of any of the former predefined scenes and it its a much more versatile structure.
-- Now main functions are chainable
-— Grammars can now be easily used into the texts of scenes in Interactive Stories!
 */
 
 class Aventura {
@@ -43,7 +33,7 @@ class Aventura {
 
   // GRAMMAR OUTPUT FUNCTIONS
 
-  developGrammar(start) {
+  expandGrammar(start) {
     const firstString = this.selectGrammarRule(this.grammar[start]);
     return this.grammarRuleRecursion(firstString);
   }
@@ -61,13 +51,13 @@ class Aventura {
           // if there is a path for the rule
           const pathList = rule.match(/[\w\d]+/g);
           const ruleArray = this.getNestedObject(this.grammar,pathList);
-          if (!ruleArray) {console.error(`Tried to develop from rule: "${rule}", but couldn't find it / Se intentó desenvolver desde la regla "${rule}", pero no se pudo encontrar`)};
+          if (!ruleArray) {console.error(`Tried to expand from rule "${rule}", but couldn't find it / Se intentó expandir desde la regla "${rule}", pero no se pudo encontrar`)};
           const preTransformed = this.selectGrammarRule(ruleArray);
           return this.transformString(preTransformed,transformations);
         } else {
           // if the rule can be accesed directly
           const ruleArray = this.grammar[rule];
-          if (!ruleArray) {console.error(`Tried to develop from rule: "${rule}", but couldn't find it / Se intentó desenvolver desde la regla "${rule}", pero no se pudo encontrar`)};
+          if (!ruleArray) {console.error(`Tried to expand from rule "${rule}", but couldn't find it / Se intentó expandir desde la regla "${rule}", pero no se pudo encontrar`)};
           const preTransformed = this.selectGrammarRule(ruleArray);
           return this.transformString(preTransformed,transformations);
         }
@@ -103,40 +93,9 @@ class Aventura {
     return newstring;
   }
 
-  // INTERACTIVE STORY PROMPT VERSION
-
-  promptAdventure(start) {
-    document.title = this.grammar?this.grammarRuleRecursion(this.scenes[start].text):this.scenes[start].text; // Change the title of html page to adventure name
-    this.goToScene_prompt(this.scenes[start]);
-  }
-
-  goToScene_prompt(scene) {
-    alert(this.grammar?this.grammarRuleRecursion(scene.text):scene.text);
-    if (scene.options) {
-      const conjuction = this.lang === 'es' ? 'o' : 'or';
-      const validOptions = scene.options.map(d=>d.button);
-      const response = prompt(`${validOptions.join(` ${conjuction} `)}`);
-      if (!response) {
-        alert(this.lang === 'en' ? "You quit" : "Saliste");
-        return
-      }
-      if (!validOptions.includes(response)) {
-        const errorMsg = this.lang === 'en' 
-        ? `"${response}" is not a valid answer, you must choose either ${validOptions.join(` ${conjuction} `)}.`
-        : `"${response}" es una respuesta inválida, debes escoger entre ${validOptions.join(` ${conjuction} `)}`;
-        alert(errorMsg);
-        this.goToScene_prompt(scene);
-      } else {
-        this.goToScene_prompt(scene.options.find(d=>d.button===response));
-      }
-    } else {
-      this.goToScene_prompt(this.scenes[scene.scene]);
-    }
-  }
-
   // INTERACTIVE STORY DOM VERSION
 
-  domAdventure(start) {
+  startAdventure(start) {
     document.title = this.grammar?this.grammarRuleRecursion(this.scenes[start].text):this.scenes[start].text; // Change the title of html page to adventure name
     if (this.options.defaultCSS) {this.setCSS()};
 
@@ -211,7 +170,7 @@ class Aventura {
           this.goToScene_dom(option);
         });
       }
-    } else {
+    } else if (scene.scene) {
       // Create a default continue button
       const continueButton = document.createElement("button");
       continueButton.className = "storybutton";
@@ -227,6 +186,16 @@ class Aventura {
 
   selectGrammarRule(array) {
     // Pick a random rule from an array of rules
+    if (array.prob) {
+      const chooser = Math.random() * array.prob.reduce((a,c)=>a+c);
+      let count = 0;
+      for (let i=0;i<array.prob.length;i++) {
+        if (count <= chooser && chooser < count+array.prob[i] ) {
+          return array[i];
+        }
+        count += array.prob[i];
+      }
+    }
     return array[Math.floor(Math.random()*array.length)];
   }
 
@@ -262,6 +231,7 @@ class Aventura {
     let deadEnds = [];
     for (let e of Object.keys(testScenes)) {
       const scene = testScenes[e];
+      if (scene.deadEnd) {continue}
       if (scene.options) {
         const filtered = scene.options.filter(d=>!testScenes[d.scene]);
         deadEnds = [...deadEnds,...filtered.map(d=>`${e} => ${d.scene}`)];
@@ -272,7 +242,7 @@ class Aventura {
       }
     }
     if (deadEnds.length>0) {
-      const errorMsg = `There are errors on the structure of the scenes. The following scenes are dead ends: ${deadEnds.join(", ")} / Hay errores en la estructura de las escenas. Las siguientes escenas no llevan a ningún lado: ${deadEnds.join(" / ")} `
+      const errorMsg = `The following scenes are dead ends: ${deadEnds.join(", ")} / Las siguientes escenas no llevan a ningún lado: ${deadEnds.join(", ")}`
       console.error(errorMsg);
     }
     return this
@@ -288,8 +258,8 @@ class Aventura {
   }
 }
 
-const defaultStyling = `
-#storygeneraldiv {
+const defaultStyling = 
+`#storygeneraldiv {
   box-sizing: border-box;
   margin: auto;
   max-width: 600px;
