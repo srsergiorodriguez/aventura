@@ -93,7 +93,7 @@ class Aventura {
     return newstring;
   }
 
-  // INTERACTIVE STORY DOM VERSION
+  // INTERACTIVE STORY
 
   startAdventure(start) {
     document.title = this.grammar?this.grammarRuleRecursion(this.scenes[start].text):this.scenes[start].text; // Change the title of html page to adventure name
@@ -107,6 +107,7 @@ class Aventura {
 
     // Start the interactice story display
     this.goToScene_dom(this.scenes[start]);
+    return this
   }
 
   goToScene_dom(scene) {
