@@ -232,11 +232,11 @@ class Aventura {
     let deadEnds = [];
     for (let e of Object.keys(testScenes)) {
       const scene = testScenes[e];
-      if (scene.deadEnd) {continue}
       if (scene.options) {
         const filtered = scene.options.filter(d=>!testScenes[d.scene]);
         deadEnds = [...deadEnds,...filtered.map(d=>`${e} => ${d.scene}`)];
       } else {
+        if (scene.deadEnd) {continue}
         if (!testScenes[scene.scene]) {
           deadEnds.push(`${e} => ${scene.scene}`);
         }
