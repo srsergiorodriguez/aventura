@@ -152,7 +152,7 @@ const gramatica = {
     animal: ["gata","jirafa","ardilla"],
     adjetivo: ["valiente","poderosa","inteligente"]
 }
-const textoGenerado = aventura.setGrammar(gramatica).developGrammar('frase';
+const textoGenerado = aventura.setGrammar(gramatica).developGrammar('frase');
 // Un resultado posible puede ser: "Esta es la historia de una gata. Debes saber que la gata fue muy valiente"
 ```
 
