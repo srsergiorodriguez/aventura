@@ -1,5 +1,5 @@
 /*
-Aventura v2.0.1
+Aventura v2.1.1
 A library of biterature
 Copyright (c) 2020 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
 Released under MIT License
@@ -14,6 +14,17 @@ class Aventura {
       adventureContainer: undefined
     }
     if (options) {this.options = Object.assign(this.options,options)}
+    this.grammarError = false;
+    this.scenesError = false;
+
+    // SPANISH WRAPPERS
+    this.fijarGramatica = this.setGrammar;
+    this.expandirGramatica = this.expandGrammar;
+    this.probarGramatica = this.testGrammar;
+
+    this.fijarEscenas = this.setScenes;
+    this.iniciarAventura = this.startAdventure;
+    this.probarEscenas = this.testScenes;
   }
 
   // MAIN INPUT FUNCTIONS
@@ -31,8 +42,6 @@ class Aventura {
     return this
   }
 
-  // GRAMMAR OUTPUT FUNCTIONS
-
   expandGrammar(start) {
     const firstString = this.selectGrammarRule(this.grammar[start]);
     return this.grammarRuleRecursion(firstString);
@@ -47,44 +56,46 @@ class Aventura {
       newstring = newstring.replace(rule,()=>{
         rule = rule.replace(/[<>]/gi,""); // delete <> symbols
         rule = rule.replace(/#[\w\d.,/]+#/g,""); // delete transformation definition
-        if (rule.search(/[.]/)>-1) {
-          // if there is a path for the rule
-          const pathList = rule.match(/[\w\d]+/g);
-          const ruleArray = this.getNestedObject(this.grammar,pathList);
-          if (!ruleArray) {console.error(`Tried to expand from rule "${rule}", but couldn't find it / Se intentó expandir desde la regla "${rule}", pero no se pudo encontrar`)};
-          const preTransformed = this.selectGrammarRule(ruleArray);
-          return this.transformString(preTransformed,transformations);
-        } else {
-          // if the rule can be accesed directly
-          const ruleArray = this.grammar[rule];
-          if (!ruleArray) {console.error(`Tried to expand from rule "${rule}", but couldn't find it / Se intentó expandir desde la regla "${rule}", pero no se pudo encontrar`)};
-          const preTransformed = this.selectGrammarRule(ruleArray);
-          return this.transformString(preTransformed,transformations);
-        }
+        const ruleArray = rule.search(/[.]/)>-1 ? 
+        this.getNestedObject(this.grammar,rule.match(/[\w\d]+/g)) : // if there is a path for the rule
+        this.grammar[rule]; // if the rule can be accesed directly
+        if (!ruleArray) {
+          const errorMsg = this.lang === 'es' ?
+            `Se intentó expandir desde la regla "${rule}", pero no se pudo encontrar` :
+            `Tried to expand from rule "${rule}", but couldn't find it`;
+          console.error(errorMsg);
+        };
+        const preTransformed = this.selectGrammarRule(ruleArray);
+        return this.transformString(preTransformed,transformations);
       });
     }
     return this.grammarRuleRecursion(newstring);
   }
 
-  // GRAMAR RULE CREATION
+  // GRAMMAR RULE CREATION
 
   setNewRules(string) {
     // Check if there are recursive rules in a string and add them to the grammar
     // Return the string without recursive rules
     let newstring = string;
-    const rules = newstring.match(/\$[\w\d]+\$<[\w\d:,]+>/ig);
+    const rules = newstring.match(/\$[\w\d]+\$\[[\w\d:,]+\]/ig);
     if (rules) {
       while (rules.length) {
         const newrule = rules.pop(); // remove top rule from rule list
         newstring = newstring.replace(newrule,""); // remove rule text string from original string
-        const { symbol, pairsString } = /\$(?<symbol>[\w\d]+)\$<(?<pairsString>[\w\d:,]+)>/i.exec(newrule).groups; // get symbol and string of listed values
+        const { symbol, pairsString } = /\$(?<symbol>[\w\d]+)\$\[(?<pairsString>[\w\d:,]+)\]/i.exec(newrule).groups; // get symbol and string of listed values
         const pairs = pairsString.match(/[\w\d]+:[\w\d]+/gi).map(d=>(/(?<key>[\w\d]+)[ ]?:[ ]?(?<value>[\w\d]+)/gi.exec(d)).groups); // format the string of listed values into an array of objects
         if (pairs) {
           this.grammar[symbol] = this.grammar[symbol] || {};
           // asign key-value pairs to symbol
           for (let p of pairs) {
             const ruleArray = this.grammar[p.value];
-            if (!ruleArray) {console.error(`Tried to create new rule: "${symbol}", but couldn't find "${p.value}" to produce "${p.key}" subrule / Se intentó crear la nueva regla "${symbol}", pero no se pudo encontrar "${p.value}" para producir la subregla "${p.key}"`)};
+            if (!ruleArray) {
+              const errorMsg = this.lang === 'es' ? 
+                `Se intentó crear la nueva regla "${symbol}", pero no se pudo encontrar "${p.value}" para producir la subregla "${p.key}"` 
+                : `Tried to create new rule: "${symbol}", but couldn't find "${p.value}" to produce "${p.key}" subrule`;
+              console.error(errorMsg);
+            };
             this.grammar[symbol][p.key] = [this.selectGrammarRule(ruleArray)];
           }
         }
@@ -96,7 +107,8 @@ class Aventura {
   // INTERACTIVE STORY
 
   startAdventure(start) {
-    document.title = this.grammar?this.grammarRuleRecursion(this.scenes[start].text):this.scenes[start].text; // Change the title of html page to adventure name
+    const titleContent = this.scenes[start].text || this.scenes[start].texto;
+    document.title = this.grammar ? this.grammarRuleRecursion(titleContent) : titleContent; // Change the title of html page to adventure name
     if (this.options.defaultCSS) {this.setCSS()};
 
     // Create the div that will contain the adventure
@@ -106,11 +118,11 @@ class Aventura {
     parent.appendChild(generaldiv);
 
     // Start the interactice story display
-    this.goToScene_dom(this.scenes[start]);
+    this.goToScene(this.scenes[start]);
     return this
   }
 
-  goToScene_dom(scene) {
+  goToScene(scene) {
     // Delete previous div containing story display
     const generaldiv = document.getElementById("storygeneraldiv");
     const prevdiv = document.getElementById("storydiv");
@@ -121,10 +133,10 @@ class Aventura {
     generaldiv.appendChild(storydiv);
 
     // Create image (if there's a path available)
-    if (scene.image) {
+    if (scene.image || scene.imagen) {
       const image = document.createElement("img");
       image.className = "storyimage";
-      image.src = scene.image;
+      image.src = scene.image || scene.imagen;
       storydiv.appendChild(image);
     }
 
@@ -139,7 +151,8 @@ class Aventura {
 
   typewriter(paragraph,scene) {
     // Writes the text in a typewriter effect, and once it finishes, shows buttons
-    let text = this.grammar?this.grammarRuleRecursion(scene.text):scene.text;
+    const textContent = scene.text || scene.texto;
+    let text = this.grammar ? this.grammarRuleRecursion(textContent) : textContent;
     text = text.replace(/\n/g,'<br>');
     if (this.options.typewriterSpeed > 0) {
       let i = 0;
@@ -160,30 +173,32 @@ class Aventura {
 
   optionButtons(scene) {
     const storydiv = document.getElementById("storydiv");
-    if (scene.options) {
+    if (scene.options || scene.opciones) {
+      const options = scene.options || scene.opciones;
       // Create multiple buttons for choosing a new scene path
-      for (let option of scene.options) {
+      for (let option of options) {
         const optionButton = document.createElement("button");
         optionButton.className = "storybutton";
-        optionButton.innerHTML = option.button;
+        optionButton.innerHTML = option.btn;
         storydiv.appendChild(optionButton);
         optionButton.addEventListener("click",()=>{
-          this.goToScene_dom(option);
+          this.goToScene(option);
         });
       }
-    } else if (scene.scene) {
+    } else if (scene.scene || scene.escena) {
       // Create a default continue button
+      const nextScene = scene.scene || scene.escena;
       const continueButton = document.createElement("button");
       continueButton.className = "storybutton";
       continueButton.innerHTML = this.lang === 'en' ? "Continue" : "Continuar";
       storydiv.appendChild(continueButton);
       continueButton.addEventListener("click",()=>{
-        this.goToScene_dom(this.scenes[scene.scene]);
+        this.goToScene(this.scenes[nextScene]);
       });
     }
   }
 
-  // GRAMAMAR UTILITIES
+  // GRAMMAR UTILITIES
 
   selectGrammarRule(array) {
     // Pick a random rule from an array of rules
@@ -224,31 +239,64 @@ class Aventura {
     return tempString;
   }
 
-  // INTERACTIVE STORY DEBbUGGING TOOLS
+  // INTERACTIVE STORY DEBUGGING TOOLS
 
   testScenes(scenes) {
     const testScenes = scenes || this.scenes;
-    if (!testScenes) {console.error("There are not scenes to evaluate")};
+    if (!testScenes) {
+      const errorMsg = this.lang === 'es' ? "No hay escenas para probar" : "There are not scenes to test"
+      console.error(errorMsg);
+    };
     let deadEnds = [];
     for (let e of Object.keys(testScenes)) {
       const scene = testScenes[e];
-      if (scene.options) {
-        const filtered = scene.options.filter(d=>!testScenes[d.scene]);
-        deadEnds = [...deadEnds,...filtered.map(d=>`${e} => ${d.scene}`)];
+      if (scene.options || scene.opciones) {
+        const options = scene.options || scene.opciones;
+        const filtered = options.filter(d=>!testScenes[d.scene||d.escena]);
+        deadEnds = [...deadEnds,...filtered.map(d=>`${e} => ${d.btn} => ${d.scene||d.escena}`)];
       } else {
-        if (scene.deadEnd) {continue}
-        if (!testScenes[scene.scene]) {
-          deadEnds.push(`${e} => ${scene.scene}`);
+        if (scene.deadEnd||scene.sinSalida) {continue}
+        if (!testScenes[scene.scene||scene.escena]) {
+          deadEnds.push(`${e} => ${scene.scene||scene.escena}`);
         }
       }
     }
     if (deadEnds.length>0) {
-      const errorMsg = `The following scenes are dead ends: ${deadEnds.join(", ")} / Las siguientes escenas no llevan a ningún lado: ${deadEnds.join(", ")}`
+      const errorMsg = this.lang === 'es' ?
+      `Las siguientes escenas no llevan a ningún lado: ${deadEnds.join(", ")}` :
+      `The following scenes are dead ends: ${deadEnds.join(", ")}`
       console.error(errorMsg);
+      this.scenesError = true;
     }
     return this
   }
 
+  testGrammar(grammar) {
+    const testGrammar = grammar || this.grammar;
+    if (!testGrammar) {
+      const errorMsg = this.lang === 'es' ? "No hay gramática para probar" : "There is not grammar to test"
+      console.error(errorMsg);
+    };
+    for (let e of Object.keys(testGrammar)) {
+      const rules = testGrammar[e];
+      for (let rule of rules) {
+        const references = rule.match(/<([\w\d]+)>/gi)?.map(d=>d.replace(/[<>]/g,""))||[];
+        const newRules = rule.match(/\$[\w\d]+\$\[([\w\d.,:]+)\]/gi)?.map(d=>{
+          return d.match(/([ ]?:[\w\d]+)/g).map(x=>/[ ]?:(?<key>[\w\d]+)/.exec(x).groups.key);
+        }).reduce((a,c)=>[...a,...c],[])||[];
+        const deadEnds = [...references,...newRules].filter(d=>!testGrammar[d]);
+        if (deadEnds.length>0) {
+          const errorMsg = this.lang === 'es'?
+            `Las siguientes reglas, que se referencian en "${e}", no existen: ${deadEnds.join(", ")}` :
+            `The following rules, referenced in "${e}", do not exist: ${deadEnds.join(", ")}` 
+          this.grammarError = true;
+          console.error(errorMsg);
+        }
+      }
+    }
+    return this
+  }
+  
   // INTERACTIVE STORY DOM UTILITIES
 
   setCSS() {
