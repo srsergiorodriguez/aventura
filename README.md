@@ -1,202 +1,379 @@
 # Aventura :loop:
 Biterature, generative text and interactive stories in JavaScript.
 
-For a reference in Spanish... para una referencia en español: [click here / clic aquí](https://github.com/srsergiorodriguez/aventura/blob/master/README_es.md).
+If you already know how the library works, jump to the [Cheat sheet](#cheat-sheet)
+
+To read the reference in Spanish... Para leer la referencia en español: [clic aquí / click here](/README_es.md).
 
 ## About
-This is a library that lets you create generative text using [Context Free Grammars](https://en.wikipedia.org/wiki/Context-free_grammar "Context Free Grammar") and [interactive stories](https://en.wikipedia.org/wiki/Interactive_fiction "Interactive fiction") similar to classic text based adventures (see, for example, [Zork](https://en.wikipedia.org/wiki/Zork "Zork")). Aventura is intended to be a creative coding library for exploring "biterature" or computer generated literary texts. Even though it is simple, you can create complex texts or stories that branch multiple generative possibilities.
+This is a library that lets you create generative text using a [Context free grammar](https://en.wikipedia.org/wiki/Context-free_grammar) and [interactive stories](https://en.wikipedia.org/wiki/Interactive_storytelling). Aventura is intended to be a library of creative coding that lets you explore "biterature", or computer generated literary texts. Although it is simple, with it you can create complex texts and stories.
 
-## How to use
-Just download the [minified library](docs/minified/aventura.min.js) into your project, and add a script tag referencing the minified library to your .html document, like this:
+## How to use the library
+Download the the [library](docs/source/aventura.js) into your project folder, then add a *script* tag to your main .html file:
 
 `<script src="aventura.min.js></script>`
 
-Then, in your code, create an instance for the Aventura class, for example:
+In your JavaScript code, to start using the library, create an instance of the class Aventura. Pass, as the first parameter, a string that describes the language you want to use ('en' for English (default), 'es' for Spanish):
 
-`const adventure = new Aventura('en');`
+`const aventura = new Aventura('en');`
 
-The argument 'en' specifies the language that the instance will use. In this case, English. If you want to change the default language to Spanish, pass 'es' as an argument when you create an instance. If you leave the argument undefined the default language will be English. 
-
-## Index
+### Index
 - [Aventura :loop:](#aventura-loop)
   - [About](#about)
-  - [How to use](#how-to-use)
-  - [Index](#index)
-  - [Context Free Grammar Generative Text :monkey:](#context-free-grammar-generative-text-monkey)
-    - [Advanced options](#advanced-options)
-      - [Transforming terminal text](#transforming-terminal-text)
-      - [Setting new rules](#setting-new-rules)
-  - [Interactive text based stories :alien:](#interactive-text-based-stories-alien)
-    - [Add images!](#add-images)
-  - [Custom options](#custom-options)
-      - [Changing typewriter speed](#changing-typewriter-speed)
-      - [Overriding the style of domAdventure](#overriding-the-style-of-domadventure)
+  - [How to use the library](#how-to-use-the-library)
+    - [Index](#index)
+  - [Generative text with Context free grammar :monkey:](#generative-text-with-context-free-grammar-monkey)
+    - [The basics](#the-basics)
+    - [Finding errors](#finding-errors)
+    - [Generative text - advanced options](#generative-text---advanced-options)
+      - [Defining rule option probabilities](#defining-rule-option-probabilities)
+      - [Applying transformations](#applying-transformations)
+      - [Creating new rules](#creating-new-rules)
+  - [Interactive stories :alien:](#interactive-stories-alien)
+    - [The basics](#the-basics-1)
+    - [Finding errors](#finding-errors-1)
+    - [Interactive stories - advanced options](#interactive-stories---advanced-options)
+      - [Add images!](#add-images)
+      - [Using generative text in your stories](#using-generative-text-in-your-stories)
+      - [Custom configuration](#custom-configuration)
+        - [Choosing a container](#choosing-a-container)
+        - [Change typewriter speed](#change-typewriter-speed)
+        - [Overwrite CSS styling](#overwrite-css-styling)
+  - [Cheat sheet](#cheat-sheet)
   - [Help to improve this library](#help-to-improve-this-library)
-  - [Version, license and copyright](#version-license-and-copyright)
+  - [Version, license, copyright](#version-license-copyright)
+        - [Colaborators](#colaborators)
 
-## Context Free Grammar Generative Text :monkey:
-Aventura lets you generate text by defining a grammar and by developing it. Namely, traversing a possible path inside the structure of the grammar and, as a result, generating each time a different string of text (ideally!).
-Think of a grammar as a tree: you start at the trunk and then you choose a branch, and then a sub branch and so on, until you find a leaf; the leaf is a word or a set of words. Then you choose other branches and end in another leaf... At the end, you get a set of leafs. Such set is your newly generated text.
+## Generative text with Context free grammar :monkey:
 
-In Aventura, a grammar is estructured as an object which contains a set of rules in the form of arrays. Such rules should include **conventional strings of text**, **'terminal' symbols** (which point to inventories of words or phrases that could replace the symbol), or **'non-terminal' variables** (which point to inventories of rules that could replace the variables).
+### The basics
 
-Symbols and variables are referenced inside rules by using tags enclosed in angle brackets: `<tag>`.
+The generative texts that you can create with Aventura are structured on a system called [Context free grammar](https://en.wikipedia.org/wiki/Context-free_grammar). In less extravagant words, you can imagine that the text you're going to generate emerges from a tree. The final text is the trunk, but, in order to define the parts of such text, you must choose different branches collecting fruits (each fruit is a text piece). At each branch you can choose which of the many available fruits you want, and once you pick the fruit it goes to the base of the tree (it becomes part of the final text). In fact, each branch can have its own sub-branches, its own path. So, to get a piece of text (or fruit) you must get to the end of a sequence of sub-branches.
 
-This is an example of a very simple grammar.
+In Aventura you represent the tree of your grammar by using an *object* that contains a series of *arrays*, which contain a list of *strings*. One of those arrays is the trunk (whichever you choose), and all the rest are branches or sub-branches. For convenience, we'll call any array in the grammar a 'rule'. Each rule is a list of options; one of such options will be chosen when the tree traversing passes through the rule (including the base!). Inside each option you can write conventional text or references to other rules that must be followed in order to complete the text. To reference another rule you must use a tag like this: `<regla>`.
+
+Then, a very simple tree or grammar, with just one trunk and a branch, would look like this:
 
 ```
-let grammar = {
-    phrase: ["A <adjective> <animal>"], // this rule references other rules. It is non-terminal
-    animal: ["cat","dog","squirrel"], // this rule is an inventory of terminal words
-    adjective: ["brave","powerful","smart"]
+const tree = {
+    trunk: ["Hello and <branch>"],
+    branch: ["good day","goodbye","hasta la vista"]
+};
+```
+
+The possible results of a text produced with this grammar are: "Hello and good day", "Hello and goodbye", and "Hello and hasta la vista". The option in the branch that will complete the text will be chosen at random, and all the options have the same chance of appearing. If you want to have more control over the probabilities, [check the advanced options](#generative-text---advanced-options). You can include as many options as you want, even only one, as is the case with the trunk, but no empty arrays.
+
+Test the results! Once you've created the grammar, you must pass it as an argument to your instance of Aventura using the **'setGrammar'** function:
+
+`aventura.setGrammar(tree);`
+
+And, to get a generated text you must use the funcion **'expandGrammar'**, passing as argument the name (the key) of the trunk (which, in this case, is precisely 'trunk'):
+
+`const text = aventura.expandGrammar('trunk');`
+
+Or, conveniently, you can chain both functions:
+
+`const text = aventura.setGrammar(tree).expandGrammar('trunk');`
+
+The previous example was a very simple text generator, but you can make much more complex things. Let's create another grammar and include more branches, and even sub-branches:
+
+```
+const grammmar = {
+    sentence: ["A <attribute> <animal>"],
+    animal: ["cat","giraffe","squirrel"],
+    attribute: ["<adjective> <color>"],
+    color: ["green","blue","red"],
+    adjective: ["strong","smart","brave"]
+};
+
+const text = aventura.setGrammar(grammar).expandGrammar('sentence');
+console.log(text);
+// A possible result would be: "A brave red giraffe"
+```
+
+Note that the branch attribute is referencing two sub-branches (adjective and color), so Aventura will check them too to get the final result.
+
+Try to create more complex rules!
+
+### Finding errors
+
+It may be the case that, when you create a complex grammar, when you generate the text something goes wrong. Most probably, you have a reference to a rule that doesn't exist. Do not panic, it's hard to trace all the branches in a tree once the tree gets bigger. To help you debug and correct errors, Aventura will show you in the console a message like this:
+
+`Tried to expand from rule "colr", but couldn't find it`
+
+Aha! What this message is telling us is that the rule "colr" doesn't exist, so we must check if we misspelled the name or if we forgot to create the rule.
+
+To analyze your grammar in general, so you can find any reference error, you can use the function **'testGrammar'** (the function is chainable):
+
+`const text = aventura.setGrammar(grammar).testGrammar().expandGrammar('sentence');`
+
+Aventura will show you in the console the origin of all errors, like this:
+
+`The following rules, referenced in "attribute", do not exist: clr`
+
+### Generative text - advanced options
+
+#### Defining rule option probabilities
+If you want an option in a rule to have more probabilites of appearing in the final text, you can create a new property called 'prob' in the array that represents the rule. Ideally, each option must have a probability value between 0 and 1, and the sum of all values must be equal to 1:
+
+```
+const grammar = {
+    colors: ["green","blue","red","purple"]
+};
+grammar.colors.prob = [0.1,0.2,0.1,0.6]
+```
+
+In the example above, "purple" will be more likely to appear.
+
+#### Applying transformations
+You can apply some transformations to the text that is expanding from some rule. For example, you can capitalize the first letter in the string of text, or you can capitalize all of the letters of the string. Transformations must be indicated inside a pair of '#' symbols after the name of the reference. You can apply multiple transformations (split them by commas):
+
+```
+const grammar = {
+    sentence: ["<animal#ALLCAPS#>"],
+    animal: ["cat","giraffe","squirrel"]
 }
+const text = aventura.setGrammar(grammar).expandGrammar('sentence');
+// A possible result would be: "SQUIRREL"
 ```
 
-After you create the grammar, you have to pass it as an argument into your instance of Aventura by calling the **'setGrammar'** function:
+For now, the possible transformations are:
 
-`adventure.setGrammar(grammar);`
+* Capitalize first letter: CAPITALIZE
+* Capitalize all letters: ALLCAPS
 
-And, to generate a new piece of text, you call the **'developGrammar'** function. This function receives as an argument the name of the rule that should be used to start the development of the text. For example:
-
-```
-let generatedText = adventure.developGrammar('phrase');
-// A possible result could be: "A smart cat"
-```
-
-Try creating more complex rules. Your imagination (and the power of your computer) is the limit!
-
-### Advanced options
-#### Transforming terminal text
-Conveniently, you can apply some transformations to the text developed by terminal symbols. For instance, you can capitalize the first letter of the string or capitalize all letters. If it is the case, transformations should all be indicated into one pair of hashtags '#' after the name of the symbol (each transformation must be separated by a comma):
+#### Creating new rules
+You can create new rules while your grammar expands. This is useful to fixate rules that you want to produce generatively but also that you want tou use consistently in your new text. For example, think about a tale in which the name of a hero appears multiple times in the story. You want that the name of the hero changes with each new generation of the text, but you also want that the same name is used throughout the story. New rules are created by defining a new name for the rule (inside `$` symbol), followed by a set of sub-rules encolsed in `[ `and `]`: `[key1:value1,key2:value2...]`. Each sub-rule must be specified in key-value pairs, and the set of sub-rules must be separated by commas:
 
 ```
-let grammar = {
-    phrase: ["<animal#ALLCAPS#>"],
-    animal: ["cat","dog","squirrel"]
+const grammar = {
+    sentence: ["$hero$[name:animal,attribute:adjective]This is the story of <hero.name>. You must know that <hero.name> was very <hero.attribute>"],
+    animal: ["cat","giraffe","squirrel"],
+    adjective: ["strong","smart","brave"]
 }
-adventure.setGrammar(grammar);
-let generatedText = adventure.developGrammar('phrase');
-// A possible result could be: "SQUIRREL"
+const text = aventura.setGrammar(grammar).expandGrammar('sentence');
+// A possible result: "This is the story of cat. You must know that cat was very smart"
 ```
 
-At the moment, available transformations are: CAPITALIZE, and ALLCAPS.
+## Interactive stories :alien:
 
-#### Setting new rules
-You can set new rules as your grammar develops. This is useful to fix rules that you want to generate but you also want to use repeatedly in your text (i.e. A character in a story that reapears constantly). New rules are created by defining a new name for the rule (enclosed in `$`) followed by a set of subrules, enclosed by angle brackets. Each subrule must be specified in key-value pairs, and must be separated by commas:
+### The basics
+Aventura lets you create [interactive stories](https://en.wikipedia.org/wiki/Interactive_storytelling), in which your reader's decisions change the development of the events. Aventura produces a very simple interface that allows to navigate the story, and also controls the path of decisions followed by the reader. Even though the interface comes with some styling by default, you can customize it with CSS.
 
-```
-let grammar = {
-    phrase: ["$hero$<name:animal,attribute:adjective>This is the story of <hero.name>. You must know that <hero.name> was a very <hero.attribute> hero"],
-    animal: ["cat","dog","squirrel"],
-    adjective: ["brave","powerful","smart"]
-}
-adventure.setGrammar(grammar);
-let generatedText = adventure.developGrammar('phrase');
-// A possible result could be: "This is the story of dog. You must know that dog was a very brave hero"
-```
+You must structure your story in an object that contains the contents of every scene. Each scene will also be an object in which you should specify things like: what text to display, what options can the reader choose, what message will display after each decision, and, even, optionally, what image to show in each scene.
 
-## Interactive text based stories :alien:
-Aventura lets you create interactive text stories inspired by classic text adventures like Zork, where you have to input decisions into a prompt to advance the story. In Aventura you can create **binary decision stories**, namely, stories where you must choose between two options each time and, as a result, the story takes different paths depending on your decisions. 
+There are, basically, two types of scenes:
 
-For creating an interactive story you must pass an object as argument into **'setScenes'** function. Such object must contain the structure of the scenes of your story: 
-* the initial text (*text*)
-* the options you can choose (*optionA,optionB*)
-* a result message (*messageA,messageB*) for each option
-* and the scenes that follow depending on the chosen option (*sceneA,sceneB*).
+A *simple scene*, which shows a continue button, and when the button is pressed, it takes the reader to another scene, or which shows no button at all (used, for instance, for the end of a story).
 
-Aditionally, a scenes object must contain a set of special scenes:
-* a cover -> which specifies the title and subtible of your adventure (*title,subtitle*))
-* an intro -> which specifies the exposition text in your adventure (*text*)
-* a start -> the first scene in your adventure
-* an end -> which specifies final text in your adventure (*text*). For example, a call-to-action to try the adventure again
-* and credits -> information about the authors and the year the adventure was written (*text,authors,year*)
-
-For example:
+This is the structure of a couple of simple scenes:
 
 ```
-let scenes = {
-  cover: {
-    title: "The smart squirrel",
-    subtitle: "An incredible adventure"
+const scenes = {
+  start {
+    text: "Once upon a time, there was a squashed circle", // this is the text of the scene
+    scene: "end" // this is the name of the next scene
   },
-  intro:{
-    text:"I will tell you the story of a smart squirrel..."
+  end {
+    text: "Looks like the story took an ellipsis"
+    deadEnd: true
+  }
+}
+```
+
+To display the interface of the story, first you must pass the scenes to your instance of Aventura with the **'setScenes'** function:
+
+`aventura.setScenes(scenes);`
+
+Then, you must start the interface with **startAdventure**, passing as an argument the name of the beginning scene:
+
+`aventura.startAdventure('start');`
+
+Or, conveniently, you can chain both functions:
+
+`aventura.setScenes(scenes).startAdventure('start');`
+
+The other type of scene is a **scene with options**. Here, just as with the simple scene, you should specify a text, but also you must define an array of options. The array must contain objects with the text of the buttons that will be displayed for interaction, a text that will be shown after taking a particular decision, and the scene that will follow after pressing a button:
+
+```
+const scenes = {
+  start {
+    text: "Once upon a time, there was a squashed circle",
+    options [
+      {
+        btn: "leave alone",
+        text: "you leave the circle alone",
+        scene: "end1"
+      },
+      {
+        btn: "unsquash", // This is the text that will be displayed on a button
+        text: "...unsquashing",  // This will be shown after pressing the button
+        scene: "end2" // This is the scene to which the button will redirect
+      }
+    ]
+  },
+  },
+  end1 {
+    text: "Looks like the story took an ellipsis",
+    deadEnd: true
+  }
+  end2 {
+    text: "Perfect, a round end"
+    deadEnd: true
+  }
+}
+```
+
+Of course, these scenes are just a simple example, you can make more complex stories with a larger number of scenes.
+
+### Finding errors
+
+It may be the case that, when you create a complex story, when you generate the text something goes wrong. Most probably, you have a reference to a scene that doesn't exist. Do not panic, it's hard to trace all the scenes, because the story can become messy easily. To track all your missing scenes you can use the function **testScenes** (it is chainable):
+
+`aventura.setScenes(scenes).testScenes().startAdventure('start');`
+
+In this way, Aventura will show you all the scenes that are missing:
+
+`The following scenes are dead ends: introduction => strt`
+
+This means that the scene strt referenced in introduction is either misspelled or it does not existe.
+
+:exclamation: If you intentionally want to have scenes that are deadEnds (for example, the last scene in a story), and in order to avoid an error message, define the parameter `deadEnd: true` inside the scene.
+
+### Interactive stories - advanced options
+
+#### Add images!
+:surfer: You can also add images to a scene by defining the parameter 'image' with an imagepath:
+
+```
+const scenes = {
+  start {
+    text: "Once upon a time, there was a squashed circle",
+    image: "./squashed.jpg",
+    options [
+      {
+        btn: "leave alone",
+        text: "you leave the circle alone",
+        scene: "end1",
+        image: "./squashed.jpg"
+      },
+      {
+        btn: "unsquash",
+        text: "...unsquashing",
+        scene: "end2"
+        image: "./round.jpg"
+      }
+    ]
+  },
+  },
+  end1 {
+    text: "Looks like the story took an ellipsis",
+    deadEnd: true
+  }
+  end2 {
+    text: "Perfect, a round end"
+    deadEnd: true
+  }
+}
+```
+
+#### Using generative text in your stories
+
+This is a powerful functionality, you can combine generative text produced with a grammar into the development of your story. To do it, you must first pass a grammar to your intance of Aventura as well as your scenes. In this way, your scenes can contain strings that contain references to rules in the grammar:
+
+```
+const grammar = {
+  attributes: ["brave","impatient","elusive","smart"],
+  green: ["greenful","greenish"],
+  yellow: ["yellowy","yeeelloooow"],
+  blue: ["bluish","very blue"]
+}
+
+const scenes = {
+  cover: {
+    text: 
+    `$squirrel$[attribute:attributes]The <squirrel.attribute#ALLCAPS#> squirrell.
+an amazing story`,
+    scene: 'introduction'
+  },
+  introduction:{
+    text:"I will tell you the story of a very <squirrel.attribute> squirrel...",
+    scene: 'start'
   },
   start: {
-    text:"I've found a delicious peanut! —Said the squirrel—. Should I eat it or save it?",
-    optionA:"Eat",
-    optionB:"Save",
-    sceneA:"peanuteaten",
-    sceneB:"end",
-    messageA: "The squirrel ate the peanut",
-    messageB: "The squirrel saved the peanut for later. Smart move!, because in winter, she found it again and she had a good snack when she was hungry"
-  },
-  peanuteaten: {
-    text:"Later on, winter came. And the squirrel had no peanuts to snack on. What should she eat?",
-    optionA:"Eat grass",
-    optionB:"Eat snow",
-    sceneA:"end",
-    sceneB:"end",
-    messageA: "Grass is no food for a Squirrel, I should have saved some peanuts.",
-    messageB: "Snow is no food for a Squirrel, I should have saved some peanuts."
+    text:
+    `The squirrel had a beatiful fur of color...`,
+    options: [
+      {
+        btn:"Green",
+        scene: "end",
+        text: "$squirrel$[color:green]Of course, <squirrel.color>"
+      },
+      {
+        btn:"Blue",
+        scene: "end",
+        text: "$squirrel$[color:blue]Of course, <squirrel.color>"
+      },
+      {
+        btn:"Yellow",
+        scene: "end",
+        text: "$squirrel$[color:yellow]Of course, <squirrel.color>"
+      }
+    ]
   },
   end: {
-    text:"You completed the story. Do you want to try again?"
+    text:"That's all",
+    scene: "credits"
   },
   credits: {
-    text: "This story was written by:",
-    authors: ["Sergio Rodríguez Gómez"],
-    year: 2019
+    text: 
+    `This story was written by
+    Sergio Rodríguez Gómez
+    2020`,
+    deadEnd: true
   }
 }
 
-const adventure = new Aventura();
-adventure.setScenes(scenes);
+aventura.setGrammar(grammar).setScenes(scenes).startAdventure('cover');
 ```
 
-After you have defined your scenes, Aventura lets you choose between two options: to display your interactive story in prompts in your explorer (by using **'promptAdventure'** function), or to display your interactive story in a very simple html, css styled interface (by using **'domAdventure'** function). It is very simple to choose either one:
-
-`aventura.promptAdventure(); // the prompt interface`
-
-or
-
-`aventura.domAdventure(); // the html interface`
-
-Try both and chose the interface you like the most.
-
-NOTE: You can pass in the id of a div element into **domAdventure** function if you want to place the interface in a particular place in your website.
-
-### Add images!
-:surfer: If you choose **domAdventure** interface you can also add images to your scenes by specifying an image path in the *image* parameter (for the initial presentation of each scene) and *imageA* / *imageB* parameters for the subsequent messages. All the images adapt to the size of the interface (by default, 600px).
-
-
-## Custom options
-You can change some options by passing an configuration object into any new instance of Aventura.
+#### Custom configuration
+You can change some options if you pass a configuration object when you create an instance of Aventura:
 
 ```
-let configuration = {//here you specify new options}
-const adventure = new Aventura('en',options);
+const config = {
+      typewriterSpeed: 50,
+      defaultCSS: true,
+      adventureContainer: undefined
+    }
+const aventura = new Aventura('es',config);
 ```
+The options are:
 
-Such options are:
-#### Changing typewriter speed
-To change the default speed of the typewriter effect in the domAdventure interface, define the **typewriterSpeed** property in your configuration object. Default is 50,that is, a new letter every 50 milliseconds.
-If **typewriterSpeed** is 0, the typewriter effect will get disabled and text will display immediately.
+##### Choosing a container
+You can place your story in the DOM element you like in your project, just put the id of your container in the parameter **adventureContainer**.
 
-#### Overriding the style of domAdventure
-To override the default style of the **domAdventure** interface, pass as string containing your new css style into the **style** property in the configuration object.
-I recommend using the default styling as a template and adapting it to your taste:
+##### Change typewriter speed
+Change the speed of the typewritter with the parameter **typewriterSpeed**. The value by default is 50, that is, one extra letter every 50 milliseconts. If **typewriterSpeed** all the text will display immediately.
+
+##### Overwrite CSS styling
+To disable the default style of the interface, pass false in the parameter **defaultCSS**. Then you can customize the style as you prefer. For reference, this is the default styling:
 
 ```
+// General container
 #storygeneraldiv {
   box-sizing: border-box;
   margin: auto;
   max-width: 600px;
 }
+
+// Container of the story
 #storydiv {
   box-sizing: border-box;
   border: solid black 1px;
 }
+
+// Text paragraph
 .storyp {
   box-sizing: border-box;
   min-height: 40px;
@@ -204,6 +381,8 @@ I recommend using the default styling as a template and adapting it to your tast
   padding: 0px 10px;
   font-family: 'Courier New', Courier, monospace;
 }
+
+// Option buttons
 .storybutton {
   font-size: 20px;
   padding: 3px:
@@ -217,12 +396,16 @@ I recommend using the default styling as a template and adapting it to your tast
   color: white;
   background: black;
 }
+
+// Image
 .storyimage {
   max-width: 100%;
   display: block;
   margin-left: auto;
   margin-right: auto;
 }
+
+// Configuration for small devices
 @media screen and (max-device-width: 500px) {
   #storygeneraldiv {
     max-width:100%;
@@ -237,23 +420,68 @@ I recommend using the default styling as a template and adapting it to your tast
 }
 ```
 
+## Cheat sheet
+
+General:
+
+* Create instance : `const aventura = new Aventura(?language, ?config);`
+  
+---
+
+Generative text:
+
+* Set grammar: `setGrammar(grammar);`
+* Test grammar: `testGrammar(?grammar);`
+* Expand grammar: `expandGrammar(root);`
+
+---
+
+* Reference a rule: `<rule>`
+* Reference with transformation: `<rule#TRANSFORMATION#>`
+* New rule: `$name$[key:subrule]`
+
+---
+
+Interactive story
+
+* Set scenes: `setScenes(scenes);`
+* Display interface: `startAdventure(startScene);`
+* Test scenes: `testScenes(?scenes);`
+
+---
+
+* Simple scene: `{text, ?scene, ?image, ?deadEnd}`
+* Scene with options:
+```
+{
+  text,
+  ?image,
+  options: [
+    {
+      btn,
+      text,
+      scene,
+      ?image,
+    }
+    ?...
+  ]
+}
+```
+
+(? means optional)
+
 ## Help to improve this library
-All suggestions and contributions are welcome.
-It is important to say that this is a library that intends to be bilingual, I want it to be usable and fun for both English speaking and Spanish speaking users.
+All suggestions are welcome.
+This library aims to be bilingual (Spanish-English), so it takes more time to implement some functions or to write documentation.
 
-TODO LIST — some implementations I want to add in the future are:
-* <del>Make possible to add images to interactive stories</del>
-* Add a transformation that pluralizes words, both in English and Spanish
-* Add a transformation that conjugates words, both in English and Spanish
-* Add probabilities to rule choosing when a grammar is being developed
-* Make a more efficient and easier to use css styling function
-* Add a simple interface to display generative text
+## Version, license, copyright
+v2.1.1
 
-## Version, license and copyright
-V.1.1.0
+(c) Sergio Rodríguez Gómez @srsergiorodriguez
 
-(c) Sergio Rodríguez Gómez
+[MIT LICENSE](/LICENSE)
 
-2019-2020
+2020
 
-Released under [MIT License](/LICENSE)
+##### Colaborators
+@perropulgoso
