@@ -31,13 +31,13 @@ En tu código de Javascript, para empezar a usar la librería, crea una instanci
       - [Definir probabilidades en las opciones de una regla](#definir-probabilidades-en-las-opciones-de-una-regla)
       - [Transformar el texto definido por una regla](#transformar-el-texto-definido-por-una-regla)
       - [Crear nuevas reglas](#crear-nuevas-reglas)
-  - [Aventuras interactivas basadas en texto :alien:](#aventuras-interactivas-basadas-en-texto-alien)
-    - [Lo básico](#lo-básico-1)
+  - [Historias interactivas basadas en texto :alien:](#historias-interactivas-basadas-en-texto-alien)
+    - [The basics](#the-basics)
     - [Corregir errores](#corregir-errores-1)
     - [Historias interactivas - opciones avanzadas](#historias-interactivas---opciones-avanzadas)
       - [¡Añade imágenes!](#añade-imágenes)
       - [Usar texto generativo en las historias](#usar-texto-generativo-en-las-historias)
-      - [configuración personalizada](#configuración-personalizada)
+      - [Configuración personalizada](#configuración-personalizada)
         - [Escoger un contenedor](#escoger-un-contenedor)
         - [Cambiar la velocidad de la máquina de escribir](#cambiar-la-velocidad-de-la-máquina-de-escribir)
         - [Sobreescribir el estilo de la interfaz](#sobreescribir-el-estilo-de-la-interfaz)
@@ -68,19 +68,19 @@ Los posibles resultados de un texto generado con esta gramática son: "Hola y ha
 
 :exclamation: nota que para nombrar al árbol y a sus partes no puedes usar tildes ni espacios, pero el texto que está dentro de las reglas puede tener tildes sin problemas.
 
-¡Prueba los resultados! luego de que crear la gramática, tienes que pasarla como un argumento a tu instancia de Aventura usando la función **'setGrammar'**:
+¡Prueba los resultados! luego de que crear la gramática, tienes que pasarla como un argumento a tu instancia de Aventura usando la función **'fijarGramatica'**:
 
-`aventura.setGrammar(arbol);`
+`aventura.fijarGramatica(arbol);`
 
-Y para obtener un texto generado debes usar la función **'expandGrammar'**, pasando como argumento el nombre del tronco (que en este caso es 'tronco').
+Y para obtener un texto generado debes usar la función **'expandirGramatica'**, pasando como argumento el nombre del tronco (que en este caso es 'tronco').
 
 
-`const textoGenerado = aventura.expandGrammar('tronco');`
+`const textoGenerado = aventura.expandirGramatica('tronco');`
 
 
 O, convenientemente, puedes encadenar las funciones de pasar la gramática y luego expandirla, así tienes todo en una sola línea:
 
-`const textoGenerado = aventura.setGrammar(arbol).expandGrammar('tronco');`
+`const textoGenerado = aventura.fijarGramatica(arbol).expandirGramatica('tronco');`
 
 Ese que vimos es un generador muy simple, pero puede ser más complejo. Ahora incluyamos más ramas, e incluso subramas:
 
@@ -93,7 +93,7 @@ const gramatica = {
     adjetivo: ["fuerte","inteligente","valiente"]
 };
 
-const textoGenerado = aventura.setGrammar(arbol).expandGrammar('tronco');
+const textoGenerado = aventura.fijarGramatica(gramatica).expandirGramatica('frase');
 console.log(textoGenerado);
 // Un resultado posible sería: "Una jirafa roja valiente"
 ```
@@ -106,13 +106,19 @@ Intenta crear reglas más complejas. ¡Tu imaginación es el límite! ...y el po
 
 Puede que, si creas una gramática compleja, al generar un texto nuevo veas que el programa no funciona. Esto probablemente se deba a que hay una referencia a una regla que no existe. No desesperes, es difícil llevar la cuenta de todas las ramas una vez el árbol se hace más y más grande. Para solucionarlo, Aventura te mostrará el origen de tu error en la consola con un mensaje como este:
 
-```
-Tried to expand from rule: "colr", but couldn't find it / Se intentó expandir desde la regla "colr", pero no se pudo encontrar
-```
+`Se intentó expandir desde la regla "colr", pero no se pudo encontrar`
 
 ¡Ajá! Lo que este mensaje está diciendo es que no existe la regla "colr", así que tendría que revisar si está mal escrito el nombre de la regla o si debo crearla porque lo olvidé.
 
 :exclamation: no sería imposible que tu programa tuviera otro tipo de error, pero este es sin duda el más común.
+
+Para hacer un análisis general de tu gramática, y así encontrar todos los errores posibles de referencias a reglas que no existen, puedes usar la función **'probarGramatica'** (la función es encadenable, antes de expandir la gramática):
+
+`const textoGenerado = aventura.fijarGramatica(gramatica).probarGramatica().expandirGramatica('frase');`
+
+Así, Aventura te mostrará en la consola el origen de todos los errores en gramática con mensajes como este:
+
+`Las siguientes reglas, que se referencian en "cualidad", no existen: clr`
 
 ### Texto generativo - opciones avanzadas
 #### Definir probabilidades en las opciones de una regla
@@ -135,8 +141,8 @@ const gramatica = {
     frase: ["<animal#ALLCAPS#>"],
     animal: ["gato","jirafa","ardilla"]
 }
-const textoGenerado = aventura.setGrammar(gramatica).developGrammar('frase';
-// Un resultado posible puede ser: "ARDILLA"
+const textoGenerado = aventura.fijarGramatica(gramatica).expandirGramatica('frase');
+// Un resultado posible sería: "ARDILLA"
 ```
 
 En el momento, las tranformaciones posibles son:
@@ -144,21 +150,21 @@ En el momento, las tranformaciones posibles son:
 * Todas las letras en mayúscula: ALLCAPS
 
 #### Crear nuevas reglas
-Puedes crear nuevas reglas mientras tu gramática se desenvuelve. Esto es útil para fijar reglas que quieres producir generativamente pero que además usarás recurrentemente en tu nuevo texto. Por ejemplo, piensa en un personaje que aparece varias veces en una historia; quieres que su nombre se decida a partir de una lista de opciones, pero también quieres que, una vez se haya elegido al comienzo de la historia, se siga usando consistentemente en el resto de la historia. Las reglas nuevas se crean definiendo un nuevo nombre para la regla (encerrado en `$`), seguido de un set de subreglas, encerradas en paréntesis angulares. Cada subregla debe especificarse en pares de clave-valor, y el conjunto de subreglas deben separarse por comas:
+Puedes crear nuevas reglas mientras tu gramática se expande. Esto es útil para fijar reglas que quieres producir generativamente pero que además usarás recurrentemente en tu nuevo texto. Por ejemplo, piensa en un personaje que aparece varias veces en una historia; quieres que su nombre se decida a partir de una lista de opciones, pero también quieres que, una vez se haya elegido al comienzo de la historia, se siga usando consistentemente en el resto de la historia. Las reglas nuevas se crean definiendo un nuevo nombre para la regla (encerrado en `$`), seguido de un set de subreglas, encerradas en paréntesis cuadrados: `[clave1:valor1,clave2,valor2...]`. Cada subregla debe especificarse en pares de clave-valor, y el conjunto de subreglas deben separarse por comas:
 
 ```
 const gramatica = {
-    frase: ["$heroe$<nombre:animal,atributo:adjetivo>Esta es la historia de una <heroe.nombre>. Debes saber que la <heroe.nombre> fue muy <heroe.atributo>"],
+    frase: ["$heroe$[nombre:animal,atributo:adjetivo]Esta es la historia de una <heroe.nombre>. Debes saber que la <heroe.nombre> fue muy <heroe.atributo>"],
     animal: ["gata","jirafa","ardilla"],
     adjetivo: ["valiente","poderosa","inteligente"]
 }
-const textoGenerado = aventura.setGrammar(gramatica).developGrammar('frase';
+const textoGenerado = aventura.fijarGramatica(gramatica).expandirGramatica('frase');
 // Un resultado posible puede ser: "Esta es la historia de una gata. Debes saber que la gata fue muy valiente"
 ```
 
-## Aventuras interactivas basadas en texto :alien:
+## Historias interactivas basadas en texto :alien:
 
-### Lo básico
+### The basics
 
 Aventura te permite crear [Historias interactivas basadas en texto](https://es.wikipedia.org/wiki/Aventura_conversacional), en las que debes tomar decisiones que cambian el rumbo de la historia. Aventura produce una interfaz muy simple que permite navegar una historia interactiva de este tipo y controla el camino de decisiones que siguen tus lectores. Aunque viene con unos ajustes por defecto, el estilo de tal interfaz es muy personalizable si conoces los fundamentos [CSS](https://developer.mozilla.org/es/docs/Web/CSS).
 
@@ -173,106 +179,106 @@ Esta es la estructura de un par de objetos de escena simple en un objeto de esce
 ```
 const escenas = {
   inicio {
-    text: "Érase una vez un círculo aplastado", // aquí va el texto de la escena
-    scene: "final" // este es el nombre de la siguiente escena
+    texto: "Érase una vez un círculo aplastado", // aquí va el texto de la escena
+    escena: "final" // este es el nombre de la siguiente escena
   },
   final {
-    text: "Parece que la historia tomó una elipsis"
-    deadEnd: true
+    texto: "Parece que la historia tomó una elipsis"
+    sinSalida: true
   }
 }
 ```
 
-Para mostrar la interfaz que permite navegar la historia, primero debes pasar las escenas a tu instancia de Aventura por medio de la función **setScenes**:
+Para mostrar la interfaz que permite navegar la historia, primero debes pasar las escenas a tu instancia de Aventura por medio de la función **fijarEscenas**:
 
-`aventura.setScenes(escenas);`
+`aventura.fijarEscenas(escenas);`
 
-Y además debes iniciar la aventura con **startAdventure**, pasando como argumento el nombre de la escena inicial:
+Y además debes iniciar la aventura con **iniciarAventura**, pasando como argumento el nombre de la escena inicial:
 
-`aventura.startAdventure('inicio');`
+`aventura.iniciarAventura('inicio');`
 
 O, convenientemente, puedes encadenar las dos funciones en una sola línea:
 
-`aventura.setScenes(escenas).expandGrammar('inicio');`
+`aventura.fijarEscenas(escenas).iniciarAventura('inicio');`
 
 El otro tipo de escena es una **escena con opciones**. Aquí, igual que con la escena simple, debes especificar un texto, pero también debes definir una lista de opciones. La lista debe contener objetos con el texto de los botones que explican las decisiones, un texto que se presentará luego de tomar la decisión, y la escena a la que llevará haber tomado la decisión:
 
 ```
 const escenas = {
   inicio {
-    text: "Érase una vez un círculo aplastado", // aquí va el texto de la escena
-    options [
+    texto: "Érase una vez un círculo aplastado", // aquí va el texto de la escena
+    opciones [
       {
-        button: "dejar tranquilo",
-        text: "dejas al círculo en paz",
-        scene: "final1"
+        btn: "dejar tranquilo",
+        texto: "dejas al círculo en paz",
+        escena: "final1"
       },
       {
-        button: "desaplastar", // Este es el texto del botón en esta decisión
-        text: "...desaplastando",  // Este es el texto que se mostrará luego de presionar el botón
-        scene: "final2" // Esta es la escena a la que dirige
+        btn: "desaplastar", // Este es el texto del botón en esta decisión
+        texto: "...desaplastando",  // Este es el texto que se mostrará luego de presionar el botón
+        escena: "final2" // Esta es la escena a la que dirige
       }
     ]
   },
   final1 {
-    text: "Parece que la historia tomó una elipsis",
-    deadEnd: true
+    texto: "Parece que la historia tomó una elipsis",
+    sinSalida: true
   }
   final2 {
-    text: "Perfecto, un final redondo"
-    deadEnd: true
+    texto: "Perfecto, un final redondo"
+    sinSalida: true
   }
 }
 ```
-
-:exclamation: nota que los parámetros al interior de las escenas tienen nombres en inglés, esto se debe al diseño de la librería. Pero no te preocupes, el contenido puede estár en español (o en el idioma que quieras).
 
 Por supuesto, estas escenas son un ejemplo simple, útil para explicar los fundamentos básicos de la librería, pero tú puedes hacer cosas mucho más complejas, con un número mayor de escenas.
 
 ### Corregir errores
 
-Puede que, si creas una historia compleja, al iniciar la interfaz veas que alguna escena no funciona. Esto probablemente se debe a que la escena referenciada en realidad no existe. No desesperes, es difícil llevar la cuenta de todas las escenas, porque la historia puede volverse muy compleja fácilmente. Para solucionar el problema, puedes usar la función **testScenes** (la función es encadenable):
+Puede que, si creas una historia compleja, al iniciar la interfaz veas que alguna escena no funciona. Esto probablemente se debe a que la escena referenciada en realidad no existe. No desesperes, es difícil llevar la cuenta de todas las escenas, porque la historia puede volverse muy enredada fácilmente. Para solucionar el problema, puedes usar la función **probarEscenas** (la función es encadenable):
 
-`aventura.setScenes(escenas).testScenes().startAdventure('inicio');`
+`aventura.fijarEscenas(escenas).probarEscenas().iniciarAventura('inicio');`
 
 Así, Aventura te mostrará el origen de tu error en la consola con un mensaje como este:
 
-`The following scenes are dead ends: introduccion => inici / Las siguientes escenas no llevan a ningún lado: introduccion => inici`
+`Las siguientes escenas no llevan a ningún lado: introduccion => inici`
 
-Esto quiere decir que tengo que revisar si escribí mal el nombre de la escena o si no existe la escena que estoy referenciando. En el caso del ejemplo, para la escena referenciada en 'introduccion' falta una letra, porque la escena se llama 'inicio'.
+Esto quiere decir que hay que revisar si está mal escrito el nombre de la escena o si no existe la escena referenciada. En el caso del ejemplo, para la escena referenciada en 'introduccion' falta una letra, porque la escena se llama 'inicio'.
 
-:exclamation: Si, intencionalmente, quieres que una escena no lleve a ningún lado (como puede ser el caso con una escena final), para evitar el mensaje de error pon lo siguiente en los parámetros de la escena: `deadEnd: true`.
+:exclamation: Si, intencionalmente, quieres que una escena no lleve a ningún lado (como puede ser el caso con una escena final), para evitar el mensaje de error pon lo siguiente en los parámetros de la escena: `sinSalida: true`.
 
 ### Historias interactivas - opciones avanzadas
 
 #### ¡Añade imágenes!
-:surfer: También puedes añadir imágenes a tus escenas definiendo el parámetro 'image' para establecer el *path* o camino de una imagen en la carpeta de tu proyecto, tanto en tus escenas como en los subobjetos de decisión:
+:surfer: También puedes añadir imágenes a tus escenas definiendo el parámetro 'imagen' para establecer el *path* o camino de una imagen en la carpeta de tu proyecto, tanto en tus escenas como en los subobjetos de decisión:
 
 ```
 const escenas = {
   inicio {
-    text: "Érase una vez un círculo aplastado", // aquí va el texto de la escena
-    image: "./circuloaplastado.jpg"
-    options [
+    texto: "Érase una vez un círculo aplastado", // aquí va el texto de la escena
+    imagen: "./circuloaplastado.jpg"
+    opciones [
       {
-        button: "dejar tranquilo",
-        text: "dejas al círculo en paz",
-        scene: "final1"
-        image: "./circuloaplastado.jpg"
+        btn: "dejar tranquilo",
+        texto: "dejas al círculo en paz",
+        escena: "final1"
+        imagen: "./circuloaplastado.jpg"
       },
       {
-        button: "desaplastar",
-        text: "desaplastando",
-        scene: "final2"
-        image: "./circuloredondeado.jpg"
+        btn: "desaplastar",
+        texto: "desaplastando",
+        escena: "final2"
+        imagen: "./circuloredondeado.jpg"
       }
     ]
   },
   final1 {
-    text: "Parece que la historia tomó una elipsis"
+    texto: "Parece que la historia tomó una elipsis"
+    sinSalida: true
   }
   final2 {
-    text: "Perfecto, un final redondo"
+    texto: "Perfecto, un final redondo"
+    sinSalida: true
   }
 }
 ```
@@ -290,53 +296,53 @@ const gramatica = {
 
 const escenas = {
   portada: {
-    text: 
-    `$ardilla$<atributo:atributos>LA ARDILLA <ardilla.atributo#ALLCAPS#>
+    texto: 
+    `$ardilla$[atributo:atributos]LA ARDILLA <ardilla.atributo#ALLCAPS#>
 Una historia increíble`,
-    scene: 'introduccion'
+    escena: 'introduccion'
   },
   introduccion:{
-    text:"Te voy a contar la historia de una ardilla muy <ardilla.atributo>...",
-    scene: 'inicio'
+    texto:"Te voy a contar la historia de una ardilla muy <ardilla.atributo>...",
+    escena: 'inicio'
   },
   inicio: {
-    text:
+    texto:
     `La ardilla tenía un pelaje bonito de color...`,
-    options: [
+    opciones: [
       {
-        button:"Verde",
-        scene: "fin",
-        text: "$ardilla$<color:verde>Por supuesto, de color <ardilla.color>"
+        btn:"Verde",
+        escena: "fin",
+        texto: "$ardilla$[color:verde]Por supuesto, de color <ardilla.color>"
       },
       {
-        button:"Azul",
-        scene: "fin",
-        text: "$ardilla$<color:azul>Por supuesto, de color <ardilla.color>"
+        btn:"Azul",
+        escena: "fin",
+        texto: "$ardilla$[color:azul]Por supuesto, de color <ardilla.color>"
       },
       {
-        button:"Amarillo",
-        scene: "fin",
-        text: "$ardilla$<color:amarillo>Por supuesto, de color <ardilla.color>"
+        btn:"Amarillo",
+        escena: "fin",
+        texto: "$ardilla$[color:amarillo]Por supuesto, de color <ardilla.color>"
       }
     ]
   },
   fin: {
-    text:"Se acabó la historia",
-    scene: "creditos"
+    texto:"Se acabó la historia",
+    escena: "creditos"
   },
   creditos: {
-    text: 
+    texto: 
     `Esta historia fue escrita por:
     Sergio Rodríguez Gómez
     2020`,
-    deadEnd: true
+    sinSalida: true
   }
 }
 
-aventura.setGrammar(gramatica).setScenes(escenas).testScenes().startAdventure('portada');
+aventura.fijarGramatica(gramatica).fijarEscenas(escenas).iniciarAventura('portada');
 ```
 
-#### configuración personalizada
+#### Configuración personalizada
 Puedes cambiar algunas opciones si pasas un objeto de configuración cuando creas una nueva instancia de Aventura:
 
 ```
@@ -430,37 +436,38 @@ General:
 
 Texto generativo:
 
-* Pasar gramática: `aventura.setGrammar(gramatica);`
-* Expandir gramática: `aventura.expandGammar(raiz);`
+* Pasar gramática: `fijarGramática(gramatica);`
+* Evaluar estructura de la gramática: `probarGramatica(?gramatica);`
+* Expandir gramática: `expandirGramática(raiz);`
 
 ---
 
 * Referencia a regla: `<regla>`
 * Referencia con transformación: `<regla#TRANSFORMACIÓN#>`
-* Nueva regla: `$nombre$<clave:subregla>`
+* Nueva regla: `$nombre$[clave:subregla]`
 
 ---
 
 Historia interactiva:
 
-* Pasar escenas: `setScenes(escenas);`
-* Mostrar interfaz de aventura: `startAdventure(escenaDeInicio);`
-* Evaluar estructura de escenas `testScenes(?escenas);`
+* Pasar escenas: `fijarEscenas(escenas);`
+* Mostrar interfaz de aventura: `inciarAventura(escenaDeInicio);`
+* Evaluar estructura de escenas: `probarEscenas(?escenas);`
 
 ---
 
-* Escena simple: `{text: texto, ?scene: escenaSiguiente, ?image: imagen, ?deadEnd: escenaFinal}`
+* Escena simple: `{texto, ?escena, ?imagen, ?sinSalida: escenaFinal}`
 * Escena con opciones:
 ```
 {
-  text: texto,
-  ?image: imagen,
-  options: [
+  texto,
+  ?imagen,
+  opciones: [
     {
-      button: textoBoton,
-      text: texto,
-      scene: escena
-      ?image: imagen
+      btn,
+      texto,
+      escena,
+      ?imagen
     }
     ?...
   ]
@@ -485,7 +492,7 @@ Algunas implementaciones que quisiera añadir en el futuro son:
 * Crear una interfaz gráfica para diseñar las gramáticas y las historias de forma no líneal (como un árbol) que sea utilizable y exportable
 
 ## Versión, licencia y copyright
-v2.0.1
+v2.1.1
 
 (c) Sergio Rodríguez Gómez @srsergiorodriguez
 
@@ -495,6 +502,3 @@ Esta librería está amparada bajo una [licencia MIT](/LICENSE)
 
 ##### Colaboradores
 @perropulgoso
-
-
-
