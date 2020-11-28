@@ -9,7 +9,7 @@ To read the reference in Spanish... Para leer la referencia en español: [clic a
 This is a library that lets you create generative text using a [Context free grammar](https://en.wikipedia.org/wiki/Context-free_grammar) and [interactive stories](https://en.wikipedia.org/wiki/Interactive_storytelling). Aventura is intended to be a library of creative coding that lets you explore "biterature", or computer generated literary texts. Although it is simple, with it you can create complex texts and stories.
 
 ## How to use the library
-Download the the [library](docs/source/aventura.js) into your project folder, then add a *script* tag to your main .html file:
+Download the the [library](./source/aventura.js) into your project folder, then add a *script* tag to your main .html file:
 
 `<script src="aventura.min.js></script>`
 
