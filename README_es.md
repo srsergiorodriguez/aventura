@@ -64,7 +64,7 @@ const arbol = {
 };
 ```
 
-Los posibles resultados de un texto generado con esta gramática son: "Hola y hasta luego", "Hola y adiós" u "Hola y hasta nunca". La opción que completará el texto desde la rama se escogerá al azar, y todas las opciones tienen la misma probabilidad de aparecer en el texto final. Si quieres influir más en esas probabilidades, revisa las [opciones avanzadas](#texto-generativo---opciones-avanzadas). Puedes incluir tantas opciones como quieras, incluso solo una, como pasa con el tronco en el ejemplo.
+Los posibles resultados de un texto generado con esta gramática son: "Hola y hasta luego", "Hola y adiós" y "Hola y hasta nunca". La opción que completará el texto desde la rama se escogerá al azar, y todas las opciones tienen la misma probabilidad de aparecer en el texto final. Si quieres influir más en esas probabilidades, revisa las [opciones avanzadas](#texto-generativo---opciones-avanzadas). Puedes incluir tantas opciones como quieras, incluso solo una, como pasa con el tronco en el ejemplo.
 
 :exclamation: nota que para nombrar al árbol y a sus partes no puedes usar tildes ni espacios, pero el texto que está dentro de las reglas puede tener tildes sin problemas.
 
