@@ -3,7 +3,7 @@ Biteratura, texto generativo e historias interactivas en JavaScript.
 
 Si ya conoces la librería, puedes pasar al [resúmen rápido](#resumen-rápido)
 
-Para leer la referencia en inglés... For a reference in english: [clic aquí / click here](/README.md).
+Para leer la referencia en inglés... For a reference in English: [clic aquí / click here](/README.md).
 
 ## Acerca
 Esta es una librería que te permite crear texto de forma generativa usando [Gramática libre de contexto](https://es.wikipedia.org/wiki/Gram%C3%A1tica_libre_de_contexto) e [historias interactivas](https://es.wikipedia.org/wiki/Aventura_conversacional) similares a las aventuras basadas en texto clásicas (por ejemplo, el juego [Zork](https://es.wikipedia.org/wiki/Zork "Zork")). Aventura tiene el propósito de ser una librería de programación creativa para explorar la "biteratura" o los textos literarios generados por computador. Aunque es simple, con ella puedes crear textos o historias complejas que se dividen en múltiples posibilidades generativas.
