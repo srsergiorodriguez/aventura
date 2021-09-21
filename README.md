@@ -199,7 +199,7 @@ The other type of scene is a **scene with options**. Here, just as with the simp
 const scenes = {
   start {
     text: "Once upon a time, there was a squashed circle",
-    options [
+    options: [
       {
         btn: "leave alone",
         text: "you leave the circle alone",
@@ -213,11 +213,11 @@ const scenes = {
     ]
   },
   },
-  end1 {
+  end1: {
     text: "Looks like the story took an ellipsis",
     deadEnd: true
   }
-  end2 {
+  end2: {
     text: "Perfect, a round end"
     deadEnd: true
   }
@@ -250,7 +250,7 @@ const scenes = {
   start {
     text: "Once upon a time, there was a squashed circle",
     image: "./squashed.jpg",
-    options [
+    options: [
       {
         btn: "leave alone",
         text: "you leave the circle alone",
@@ -266,11 +266,11 @@ const scenes = {
     ]
   },
   },
-  end1 {
+  end1: {
     text: "Looks like the story took an ellipsis",
     deadEnd: true
   }
-  end2 {
+  end2: {
     text: "Perfect, a round end"
     deadEnd: true
   }
@@ -361,6 +361,7 @@ To disable the default style of the interface, pass false in the parameter **def
 
 ```
 // General container
+
 #storygeneraldiv {
   box-sizing: border-box;
   margin: auto;
@@ -368,12 +369,14 @@ To disable the default style of the interface, pass false in the parameter **def
 }
 
 // Container of the story
+
 #storydiv {
   box-sizing: border-box;
   border: solid black 1px;
 }
 
 // Text paragraph
+
 .storyp {
   box-sizing: border-box;
   min-height: 40px;
@@ -383,13 +386,14 @@ To disable the default style of the interface, pass false in the parameter **def
 }
 
 // Option buttons
+
 .storybutton {
-  font-size: 20px;
-  padding: 3px:
+  padding: 3px;
   background: white;
   box-shadow: none;
   border: solid 1px;
-  margin: 0px 0px;
+  margin: 0px 1em 0px 0px;
+  font-size: 20px;
   font-family: 'Courier New', Courier, monospace;
 }
 .storybutton:hover {
@@ -398,17 +402,23 @@ To disable the default style of the interface, pass false in the parameter **def
 }
 
 // Image
+
 .storyimage {
   max-width: 100%;
+  max-height: 70vh;
   display: block;
   margin-left: auto;
   margin-right: auto;
 }
 
 // Configuration for small devices
+
 @media screen and (max-device-width: 500px) {
   #storygeneraldiv {
     max-width:100%;
+  }
+  .storyimage {
+    max-width: 100%;
   }
   .storyp {
     font-size: 7vw;
@@ -481,7 +491,7 @@ v2.1.1
 
 [MIT LICENSE](/LICENSE)
 
-2020
+2021
 
 ##### Colaborators
 @perropulgoso

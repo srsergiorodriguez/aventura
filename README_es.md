@@ -178,12 +178,12 @@ Esta es la estructura de un par de objetos de escena simple en un objeto de esce
 
 ```
 const escenas = {
-  inicio {
+  inicio: {
     texto: "Érase una vez un círculo aplastado", // aquí va el texto de la escena
     escena: "final" // este es el nombre de la siguiente escena
   },
-  final {
-    texto: "Parece que la historia tomó una elipsis"
+  final: {
+    texto: "Parece que la historia formó una elipsis"
     sinSalida: true
   }
 }
@@ -205,33 +205,33 @@ El otro tipo de escena es una **escena con opciones**. Aquí, igual que con la e
 
 ```
 const escenas = {
-  inicio {
-    texto: "Érase una vez un círculo aplastado", // aquí va el texto de la escena
-    opciones [
+  inicio: {
+    texto: "Érase una vez un círculo...", // aquí va el texto de la escena
+    opciones: [
       {
         btn: "dejar tranquilo",
         texto: "dejas al círculo en paz",
         escena: "final1"
       },
       {
-        btn: "desaplastar", // Este es el texto del botón en esta decisión
-        texto: "...desaplastando",  // Este es el texto que se mostrará luego de presionar el botón
+        btn: "aplastar", // Este es el texto del botón en esta decisión
+        texto: "...aplastamiento activado...",  // Este es el texto que se mostrará luego de presionar el botón
         escena: "final2" // Esta es la escena a la que dirige
       }
     ]
   },
-  final1 {
-    texto: "Parece que la historia tomó una elipsis",
+  final1: {
+    texto: "Perfecto, un final redondo",
     sinSalida: true
-  }
-  final2 {
-    texto: "Perfecto, un final redondo"
+  },
+  final2: {
+    texto: "Parece que la historia formó una elipsis",
     sinSalida: true
   }
 }
 ```
 
-Por supuesto, estas escenas son un ejemplo simple, útil para explicar los fundamentos básicos de la librería, pero tú puedes hacer cosas mucho más complejas, con un número mayor de escenas.
+Por supuesto, estas escenas son un ejemplo sencillo, útil para explicar los fundamentos básicos de la librería, pero tú puedes hacer cosas mucho más complejas, con un número mayor de escenas.
 
 ### Corregir errores
 
@@ -254,30 +254,32 @@ Esto quiere decir que hay que revisar si está mal escrito el nombre de la escen
 
 ```
 const escenas = {
-  inicio {
-    texto: "Érase una vez un círculo aplastado", // aquí va el texto de la escena
-    imagen: "./circuloaplastado.jpg"
-    opciones [
+  inicio: {
+    texto: "Érase una vez un círculo...", // aquí va el texto de la escena
+    imagen: "./circulo.jpg",
+    opciones: [
       {
         btn: "dejar tranquilo",
         texto: "dejas al círculo en paz",
+        imagen: "./circulo.jpg",
         escena: "final1"
-        imagen: "./circuloaplastado.jpg"
       },
       {
-        btn: "desaplastar",
-        texto: "desaplastando",
-        escena: "final2"
-        imagen: "./circuloredondeado.jpg"
+        btn: "aplastar", // Este es el texto del botón en esta decisión
+        texto: "...aplastamiento activado...",  // Este es el texto que se mostrará luego de presionar el botón
+        imagen: "./circuloaplastado.jpg",
+        escena: "final2" // Esta es la escena a la que dirige
       }
     ]
   },
-  final1 {
-    texto: "Parece que la historia tomó una elipsis"
+  final1: {
+    texto: "Perfecto, un final redondo",
+    imagen: "./circulo.jpg",
     sinSalida: true
-  }
-  final2 {
-    texto: "Perfecto, un final redondo"
+  },
+  final2: {
+    texto: "Parece que la historia formó una elipsis",
+    imagen: "./circuloaplastado.jpg",
     sinSalida: true
   }
 }
@@ -367,6 +369,7 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
 
 ```
 // Contenedor general
+
 #storygeneraldiv {
   box-sizing: border-box;
   margin: auto;
@@ -374,12 +377,14 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
 }
 
 // Contenedor de la historia
+
 #storydiv {
   box-sizing: border-box;
   border: solid black 1px;
 }
 
 // Párrafo de texto
+
 .storyp {
   box-sizing: border-box;
   min-height: 40px;
@@ -389,13 +394,14 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
 }
 
 // Botón de opciones
+
 .storybutton {
-  font-size: 20px;
-  padding: 3px:
+  padding: 3px;
   background: white;
   box-shadow: none;
   border: solid 1px;
-  margin: 0px 0px;
+  margin: 0px 1em 0px 0px;
+  font-size: 20px;
   font-family: 'Courier New', Courier, monospace;
 }
 .storybutton:hover {
@@ -404,17 +410,23 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
 }
 
 // Imagen
+
 .storyimage {
   max-width: 100%;
+  max-height: 70vh;
   display: block;
   margin-left: auto;
   margin-right: auto;
 }
 
 // Configuración para dispositivos pequeños
+
 @media screen and (max-device-width: 500px) {
   #storygeneraldiv {
     max-width:100%;
+  }
+  .storyimage {
+    max-width: 100%;
   }
   .storyp {
     font-size: 7vw;
@@ -479,6 +491,8 @@ Historia interactiva:
 ## Ejemplos
 * Un ejemplo de un generador de poemas: [Demostración](https://srsergiorodriguez.github.io/autopoeta/) / [Gramática](https://github.com/srsergiorodriguez/autopoeta/blob/master/docs/assets/autopoetadb.json)
 
+* Un ejemplo de una historia interactiva con imágenes: [Demostración](https://preview.p5js.org/ssergiorodriguezz/present/aOlzMjUk-) / [Código](https://editor.p5js.org/ssergiorodriguezz/sketches/aOlzMjUk-)
+
 * Un ejemplo de una historia interactiva basada en una historia de Sherlock Holmes: [Demostración](https://srsergiorodriguez.github.io/aventura/ejemplos/historia_interactiva/) / [Código](/docs/ejemplos/historia_interactiva/main.js)
 
 ## Ayuda a mejorar esta librería
@@ -498,7 +512,7 @@ v2.1.1
 
 Esta librería está amparada bajo una [licencia MIT](/LICENSE)
 
-2020
+2021
 
 ##### Colaboradores
 @perropulgoso
