@@ -1,7 +1,7 @@
 /*
-Aventura v2.1.1
-A library of biterature
-Copyright (c) 2020 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
+Aventura v2.2.0
+A library for making biterature / Una librería para hacer biteratura
+Copyright (c) 2020 - 2021 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
 Released under MIT License
 */
 
@@ -25,6 +25,10 @@ class Aventura {
     this.fijarEscenas = this.setScenes;
     this.iniciarAventura = this.startAdventure;
     this.probarEscenas = this.testScenes;
+
+    this.cargarJSON = this.loadJSON;
+    this.cadenaMarkov = this.markovChain;
+    this.probarDistribuciones = this.testDistributions;
   }
 
   // MAIN INPUT FUNCTIONS
@@ -239,7 +243,123 @@ class Aventura {
     return tempString;
   }
 
-  // INTERACTIVE STORY DEBUGGING TOOLS
+  // MARKOV MODEL
+
+  async getMarkovModel(filename, ngram = 1, save = false) {
+    let text = await (await fetch(`./${filename}.txt`)).text();
+    text = text.replace(/([,:.;])/g, " $1").replace(/[()\¿¡!?”“—-]/g, "").toLowerCase();
+  
+    const words = text.split(/\s+/);
+    const fragments = {};
+  
+    for (let i = 0; i < words.length - ngram; i ++) {
+      let f = "";
+      for (let j = 0; j < ngram; j++) {
+        f += j === 0 ? words[i + j] : " " + words[i + j];
+      }
+  
+      if (fragments[f] === undefined) { fragments[f] = {} }
+      const nextWord = words[i + ngram];
+  
+      if (fragments[f][nextWord] === undefined) {
+        fragments[f][nextWord] = 1;
+      } else {
+        fragments[f][nextWord]++;
+      }
+    }
+  
+    const mProbs = {};
+    for (let f of Object.keys(fragments)) {
+  
+      const keys = Object.keys(fragments[f]);
+      mProbs[f] = {probs: [], grams: keys};
+  
+      let sum = 0;
+      for (let i = 0; i < keys.length; i++) {
+        sum += fragments[f][keys[i]];
+      }
+      for (let i = 0; i < keys.length; i++) {
+        mProbs[f].probs[i] = fragments[f][keys[i]] / sum; // Normalized probabilities
+      }
+    }
+  
+    if (save) {
+      this.saveJSON(mProbs, "markovModel");
+    }
+    
+    return mProbs;
+  }
+
+  // MARKOV CHAIN
+
+  markovChain(model, chainLength, seed, newLineProbability = 0.1) {
+    // Create a Markov sequence of the defined length
+    let result = seed === undefined || model[seed] === undefined ? Object.keys(model)[Math.floor(Math.random() * Object.keys(model).length)] : seed;
+    let currentGram = result;
+  
+    for (let chain = 0; chain < chainLength - 1; chain++) {
+      let nextWord = this.getNextMarkov(model[currentGram]);
+      if (nextWord === undefined) {
+        nextWord = this.getNextMarkov(model[Object.keys(model)[Math.floor(Math.random() * Object.keys(model).length)]]);
+      }
+      currentGram = `${currentGram.split(/\s+/).slice(1).join(" ")} ${nextWord}`;
+      result += ` ${nextWord}`;
+    }
+  
+    const formatted = this.formatMarkov(result, newLineProbability);
+  
+    return formatted
+  }
+
+  // MARKOV UTILITIES
+
+  getNextMarkov(data) {
+    // Get a new gram element from the defined probabilities
+    const rnd = Math.random();
+    let count = 0;
+    if (data === undefined) return undefined
+    for (let i = 0; i < data.probs.length; i++) {
+      if (count <= rnd && rnd < count + data.probs[i]) {
+        return data.grams[i];
+      }
+      count += data.probs[i];
+    }
+  }
+
+  formatMarkov(str, newLineProbability = 0.1) {
+    // Format the final markov chain text ... put initials, random new lines, adjust punctuation
+    let formatted = str.replace(/ ([,:.;])/g, "$1");
+    formatted = formatted.replaceAll(/([.]) ([\wáéíóú])/ig, (match, c1, c2, offset, fullString) => {
+      const rnd = Math.random();
+      if (rnd < newLineProbability) {
+        return `.\n${c2.toUpperCase()}`
+      } else {
+        return `. ${c2.toUpperCase()}`
+      }
+    });
+  
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }
+
+  // GENERAL UTILITIES
+
+  async loadJSON(path) {
+    return await (await fetch(path)).json();
+  }
+
+  saveJSON(obj, filename) {
+    // FOR BROWSER
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2)], {
+      type: "text/plain"
+    }));
+    a.setAttribute("download", `${filename}.json`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  // DEBUGGING TOOLS
 
   testScenes(scenes) {
     const testScenes = scenes || this.scenes;
@@ -296,6 +416,35 @@ class Aventura {
     }
     return this
   }
+
+  testDistributions(model) {
+    const distributions = {};
+    const x = {};
+    let c = 0;
+    const values = Object.values(model);
+    for (let v of values) {
+      for (let p of v.probs) {
+        const aprox = (Math.round(p / 0.05) *  0.05).toFixed(2);
+        x[c] = aprox;
+        c++;
+        if (distributions[aprox] === undefined) {
+          distributions[aprox] = 1;
+        } else {
+          distributions[aprox]++;
+        }
+      }
+    }
+
+    console.log("------------------------------------ DIST ------------------------------------");
+    const max = Math.max(...Object.values(distributions));
+    const sorted = Object.entries(distributions).sort((a, b) => a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0);
+    for (let d of sorted) {
+      console.log(`${d[0]}... ${"|".repeat(Math.ceil(d[1] * 100 / max))}`);
+    }
+    console.log("------------------------------------ DIST ------------------------------------");
+
+    return distributions
+  }
   
   // INTERACTIVE STORY DOM UTILITIES
 
@@ -316,7 +465,7 @@ const defaultStyling =
 }
 #storydiv {
   border: solid black 1px;
-  width:100%;
+  width: 100%;
 }
 .storyp {
   min-height: 40px;
@@ -324,7 +473,7 @@ const defaultStyling =
   font-size: 18px;
 }
 .storybutton {
-  padding: 3px:
+  padding: 3px;
   background: white;
   box-shadow: none;
   border: solid 1px;
@@ -337,6 +486,7 @@ const defaultStyling =
   background: black;
 }
 .storyimage {
+  max-width: 100%;
   max-height: 70vh;
   display: block;
   margin-left: auto;
@@ -345,6 +495,9 @@ const defaultStyling =
 @media screen and (max-device-width: 500px) {
   #storygeneraldiv {
     max-width:100%;
+  }
+  .storyimage {
+    max-width: 100%;
   }
   .storyp {
     font-size: 7vw;
