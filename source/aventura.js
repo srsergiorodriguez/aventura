@@ -27,8 +27,9 @@ class Aventura {
     this.probarEscenas = this.testScenes;
 
     this.cargarJSON = this.loadJSON;
+    this.fijarMarkov = this.setMarkov;
     this.cadenaMarkov = this.markovChain;
-    this.probarDistribuciones = this.testDistributions;
+    this.probarDistribucion = this.testDistribution;
   }
 
   // MAIN INPUT FUNCTIONS
@@ -43,6 +44,11 @@ class Aventura {
     for (let key of Object.keys(scenes)) {
       this.scenes[key].key = key;
     }
+    return this
+  }
+
+  setMarkov(model) {
+    this.markov = model;
     return this
   }
 
@@ -292,15 +298,15 @@ class Aventura {
 
   // MARKOV CHAIN
 
-  markovChain(model, chainLength, seed, newLineProbability = 0.1) {
+  markovChain(chainLength, seed, newLineProbability = 0.1) {
     // Create a Markov sequence of the defined length
-    let result = seed === undefined || model[seed] === undefined ? Object.keys(model)[Math.floor(Math.random() * Object.keys(model).length)] : seed;
+    let result = seed === undefined || this.markov[seed] === undefined ? Object.keys(this.markov)[Math.floor(Math.random() * Object.keys(this.markov).length)] : seed;
     let currentGram = result;
   
     for (let chain = 0; chain < chainLength - 1; chain++) {
-      let nextWord = this.getNextMarkov(model[currentGram]);
+      let nextWord = this.getNextMarkov(this.markov[currentGram]);
       if (nextWord === undefined) {
-        nextWord = this.getNextMarkov(model[Object.keys(model)[Math.floor(Math.random() * Object.keys(model).length)]]);
+        nextWord = this.getNextMarkov(this.markov[Object.keys(this.markov)[Math.floor(Math.random() * Object.keys(this.markov).length)]]);
       }
       currentGram = `${currentGram.split(/\s+/).slice(1).join(" ")} ${nextWord}`;
       result += ` ${nextWord}`;
@@ -417,11 +423,17 @@ class Aventura {
     return this
   }
 
-  testDistributions(model) {
+  testDistribution(markov) {
+    const testMarkov = markov || this.markov;
+    if (testMarkov === undefined) {
+      const errorMsg = this.lang === 'es' ? "No hay modelo Markov para probar" : "There is not Markov model to test"
+      console.error(errorMsg);
+    }
+    
     const distributions = {};
     const x = {};
     let c = 0;
-    const values = Object.values(model);
+    const values = Object.values(testMarkov);
     for (let v of values) {
       for (let p of v.probs) {
         const aprox = (Math.round(p / 0.05) *  0.05).toFixed(2);
@@ -443,7 +455,7 @@ class Aventura {
     }
     console.log("------------------------------------ DIST ------------------------------------");
 
-    return distributions
+    return this
   }
   
   // INTERACTIVE STORY DOM UTILITIES
