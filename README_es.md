@@ -11,7 +11,7 @@ Esta es una librería que te permite crear texto de forma generativa usando [Gra
 ## Cómo usarla
 Solo descarga la [librería](./source/aventura.js) en la carpeta de tu proyecto, y luego añade una etiqueta de *script* a tu documento .html, así:
 
-`<script src="aventura.min.js></script>`
+`<script src="aventura.js"></script>`
 
 En tu código de Javascript, para empezar a usar la librería, crea una instancia de la clase Aventura, y, para que la librería se ajuste al idioma español, pasa como argumento la string 'es'. por ejemplo:
 
@@ -60,7 +60,7 @@ Así, un árbol o gramática muy simple, con solo un tronco y una rama, se verí
 ```
 const arbol = {
     tronco: ["Hola y <rama>"],
-    rama: ["hasta luego","adiós","hasta nunca"]
+    rama: ["hasta luego", "adiós", "hasta nunca"]
 };
 ```
 
@@ -89,8 +89,8 @@ const gramatica = {
     frase: ["Una <animal> <cualidad>"],
     animal: ["gata","jirafa","ardilla"],
     cualidad: ["<color> <adjetivo>"],
-    color: ["verde","azul","roja"],
-    adjetivo: ["fuerte","inteligente","valiente"]
+    color: ["verde", "azul", "roja"],
+    adjetivo: ["fuerte", "inteligente", "valiente"]
 };
 
 const textoGenerado = aventura.fijarGramatica(gramatica).expandirGramatica('frase');
@@ -126,9 +126,9 @@ Si quieres que alguna opción en una regla tenga más probabilidades de aparecer
 
 ```
 const gramatica = {
-    colores: ["verde","azul","rojo","púrpura"]
+    colores: ["verde", "azul", "rojo", "púrpura"]
 };
-gramatica.colores.prob = [0.1,0.2,0.1,0.6]
+gramatica.colores.prob = [0.1, 0.2, 0.1, 0.6]
 ```
 
 En el ejemplo anterior, "púrpura" tendrá más probabilidad de aparecer que las demás opciones.
@@ -139,7 +139,7 @@ Puedes aplicar ciertas transformaciones al texto que se expande desde alguna reg
 ```
 const gramatica = {
     frase: ["<animal#ALLCAPS#>"],
-    animal: ["gato","jirafa","ardilla"]
+    animal: ["gato", "jirafa", "ardilla"]
 }
 const textoGenerado = aventura.fijarGramatica(gramatica).expandirGramatica('frase');
 // Un resultado posible sería: "ARDILLA"
@@ -155,8 +155,8 @@ Puedes crear nuevas reglas mientras tu gramática se expande. Esto es útil para
 ```
 const gramatica = {
     frase: ["$heroe$[nombre:animal,atributo:adjetivo]Esta es la historia de una <heroe.nombre>. Debes saber que la <heroe.nombre> fue muy <heroe.atributo>"],
-    animal: ["gata","jirafa","ardilla"],
-    adjetivo: ["valiente","poderosa","inteligente"]
+    animal: ["gata", "jirafa", "ardilla"],
+    adjetivo: ["valiente", "poderosa", "inteligente"]
 }
 const textoGenerado = aventura.fijarGramatica(gramatica).expandirGramatica('frase');
 // Un resultado posible puede ser: "Esta es la historia de una gata. Debes saber que la gata fue muy valiente"
@@ -183,7 +183,7 @@ const escenas = {
     escena: "final" // este es el nombre de la siguiente escena
   },
   final: {
-    texto: "Parece que la historia formó una elipsis"
+    texto: "Parece que la historia formó una elipsis",
     sinSalida: true
   }
 }
@@ -290,10 +290,10 @@ Esto es una función poderosa, puedes combinar el texto generativo que produces 
 
 ```
 const gramatica = {
-  atributos: ["valiente","esperanzada","impaciente","escurridiza"],
-  verde: ["verdosísimo","verdoláceo","verdístico"],
-  amarillo: ["amarillento","amarillisísimo","amarillito"],
-  azul: ["azulado","azuuul","ultramarino"]
+  atributos: ["valiente", "esperanzada", "impaciente", "escurridiza"],
+  verde: ["verdosísimo", "verdoláceo", "verdístico"],
+  amarillo: ["amarillento", "amarillisísimo", "amarillito"],
+  azul: ["azulado", "azuuul", "ultramarino"]
 }
 
 const escenas = {
@@ -510,7 +510,7 @@ v2.1.1
 
 (c) Sergio Rodríguez Gómez @srsergiorodriguez
 
-Esta librería está amparada bajo una [licencia MIT](/LICENSE)
+Esta librería está amparada bajo una [licencia MIT](./LICENSE)
 
 2021
 

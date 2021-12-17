@@ -11,7 +11,7 @@ This is a library that lets you create generative text using a [Context free gra
 ## How to use the library
 Download the the [library](./source/aventura.js) into your project folder, then add a *script* tag to your main .html file:
 
-`<script src="aventura.min.js></script>`
+`<script src="aventura.js"></script>`
 
 In your JavaScript code, to start using the library, create an instance of the class Aventura. Pass, as the first parameter, a string that describes the language you want to use ('en' for English (default), 'es' for Spanish):
 
@@ -57,7 +57,7 @@ Then, a very simple tree or grammar, with just one trunk and a branch, would loo
 ```
 const tree = {
     trunk: ["Hello and <branch>"],
-    branch: ["good day","goodbye","hasta la vista"]
+    branch: ["good day", "goodbye", "hasta la vista"]
 };
 ```
 
@@ -80,10 +80,10 @@ The previous example was a very simple text generator, but you can make much mor
 ```
 const grammmar = {
     sentence: ["A <attribute> <animal>"],
-    animal: ["cat","giraffe","squirrel"],
+    animal: ["cat", "giraffe", "squirrel"],
     attribute: ["<adjective> <color>"],
-    color: ["green","blue","red"],
-    adjective: ["strong","smart","brave"]
+    color: ["green", "blue", "red"],
+    adjective: ["strong", "smart", "brave"]
 };
 
 const text = aventura.setGrammar(grammar).expandGrammar('sentence');
@@ -118,9 +118,9 @@ If you want an option in a rule to have more probabilites of appearing in the fi
 
 ```
 const grammar = {
-    colors: ["green","blue","red","purple"]
+    colors: ["green", "blue", "red", "purple"]
 };
-grammar.colors.prob = [0.1,0.2,0.1,0.6]
+grammar.colors.prob = [0.1, 0.2, 0.1, 0.6]
 ```
 
 In the example above, "purple" will be more likely to appear.
@@ -131,7 +131,7 @@ You can apply some transformations to the text that is expanding from some rule.
 ```
 const grammar = {
     sentence: ["<animal#ALLCAPS#>"],
-    animal: ["cat","giraffe","squirrel"]
+    animal: ["cat", "giraffe", "squirrel"]
 }
 const text = aventura.setGrammar(grammar).expandGrammar('sentence');
 // A possible result would be: "SQUIRREL"
@@ -148,8 +148,8 @@ You can create new rules while your grammar expands. This is useful to fixate ru
 ```
 const grammar = {
     sentence: ["$hero$[name:animal,attribute:adjective]This is the story of <hero.name>. You must know that <hero.name> was very <hero.attribute>"],
-    animal: ["cat","giraffe","squirrel"],
-    adjective: ["strong","smart","brave"]
+    animal: ["cat", "giraffe", "squirrel"],
+    adjective: ["strong", "smart", "brave"]
 }
 const text = aventura.setGrammar(grammar).expandGrammar('sentence');
 // A possible result: "This is the story of cat. You must know that cat was very smart"
@@ -175,7 +175,7 @@ const scenes = {
     scene: "end" // this is the name of the next scene
   },
   end {
-    text: "Looks like the story took an ellipsis"
+    text: "Looks like the story took an ellipsis",
     deadEnd: true
   }
 }
@@ -271,7 +271,7 @@ const scenes = {
     deadEnd: true
   }
   end2: {
-    text: "Perfect, a round end"
+    text: "Perfect, a round end",
     deadEnd: true
   }
 }
@@ -283,10 +283,10 @@ This is a powerful functionality, you can combine generative text produced with 
 
 ```
 const grammar = {
-  attributes: ["brave","impatient","elusive","smart"],
-  green: ["greenful","greenish"],
-  yellow: ["yellowy","yeeelloooow"],
-  blue: ["bluish","very blue"]
+  attributes: ["brave", "impatient", "elusive", "smart"],
+  green: ["greenful", "greenish"],
+  yellow: ["yellowy", "yeeelloooow"],
+  blue: ["bluish", "very blue"]
 }
 
 const scenes = {
@@ -489,7 +489,7 @@ v2.1.1
 
 (c) Sergio Rodríguez Gómez @srsergiorodriguez
 
-[MIT LICENSE](/LICENSE)
+[MIT LICENSE](./LICENSE)
 
 2021
 
