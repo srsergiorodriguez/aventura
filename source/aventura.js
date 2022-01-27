@@ -1,7 +1,7 @@
 /*
 Aventura v2.2.0
 A library for making biterature / Una librería para hacer biteratura
-Copyright (c) 2020 - 2021 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
+Copyright (c) 2020 - 2022 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
 Released under MIT License
 */
 
@@ -30,12 +30,28 @@ class Aventura {
     this.fijarMarkov = this.setMarkov;
     this.cadenaMarkov = this.markovChain;
     this.probarDistribucion = this.testDistribution;
+
+    this.fijarIgrama = this.setIgrama;
+    this.expandirIgrama = this.expandIgrama;
+    this.mostrarIgrama = this.showIgrama;
+    this.textoIgrama = this.getIgramaText;
+
+    this.imgsMemo = {};
   }
 
   // MAIN INPUT FUNCTIONS
 
   setGrammar(grammar) {
     this.grammar = grammar;
+    return this
+  }
+
+  setIgrama(model) {
+    this.igrama = model;
+    const grammar = [];
+    for (let [key, value] of Object.entries(model.grammar)) {
+      grammar[key] = value;
+    }
     return this
   }
 
@@ -52,12 +68,27 @@ class Aventura {
     return this
   }
 
+  // GRAMMAR EXPANSION
+
   expandGrammar(start) {
     const firstString = this.selectGrammarRule(this.grammar[start]);
     return this.grammarRuleRecursion(firstString);
   }
 
-  grammarRuleRecursion(string) {
+  expandIgrama(start) {
+    const grammar = this.igrama.grammar;
+    const firstString = this.selectGrammarRule(grammar[start]);
+    const result =  this.grammarRuleRecursion(firstString, grammar).split('|').map(drawing => this.decodeDrawing(drawing));
+    return result
+  }
+
+  grammarRuleRecursion(string, g) {
+    let grammar;
+    if (g === undefined) {
+      grammar = this.grammar;
+    } else {
+      grammar = g;
+    }
     let newstring = this.setNewRules(string); // Clean string from recursive rules and create the rules
     const ruleList = newstring.match(/<[\w\d.,/#]+>/gi); // Create a list of rules to be developed from the string
     if (!ruleList) {return newstring} // Return the string if there are no new rules to develop
@@ -67,8 +98,8 @@ class Aventura {
         rule = rule.replace(/[<>]/gi,""); // delete <> symbols
         rule = rule.replace(/#[\w\d.,/]+#/g,""); // delete transformation definition
         const ruleArray = rule.search(/[.]/)>-1 ? 
-        this.getNestedObject(this.grammar,rule.match(/[\w\d]+/g)) : // if there is a path for the rule
-        this.grammar[rule]; // if the rule can be accesed directly
+        this.getNestedObject(grammar,rule.match(/[\w\d]+/g)) : // if there is a path for the rule
+        grammar[rule]; // if the rule can be accesed directly
         if (!ruleArray) {
           const errorMsg = this.lang === 'es' ?
             `Se intentó expandir desde la regla "${rule}", pero no se pudo encontrar` :
@@ -79,12 +110,18 @@ class Aventura {
         return this.transformString(preTransformed,transformations);
       });
     }
-    return this.grammarRuleRecursion(newstring);
+    return this.grammarRuleRecursion(newstring, grammar);
   }
 
   // GRAMMAR RULE CREATION
 
-  setNewRules(string) {
+  setNewRules(string, g) {
+    let grammar;
+    if (g === undefined) {
+      grammar = this.grammar;
+    } else {
+      grammar = g;
+    }
     // Check if there are recursive rules in a string and add them to the grammar
     // Return the string without recursive rules
     let newstring = string;
@@ -96,17 +133,17 @@ class Aventura {
         const { symbol, pairsString } = /\$(?<symbol>[\w\d]+)\$\[(?<pairsString>[\w\d:,]+)\]/i.exec(newrule).groups; // get symbol and string of listed values
         const pairs = pairsString.match(/[\w\d]+:[\w\d]+/gi).map(d=>(/(?<key>[\w\d]+)[ ]?:[ ]?(?<value>[\w\d]+)/gi.exec(d)).groups); // format the string of listed values into an array of objects
         if (pairs) {
-          this.grammar[symbol] = this.grammar[symbol] || {};
+          grammar[symbol] = grammar[symbol] || {};
           // asign key-value pairs to symbol
           for (let p of pairs) {
-            const ruleArray = this.grammar[p.value];
+            const ruleArray = grammar[p.value];
             if (!ruleArray) {
               const errorMsg = this.lang === 'es' ? 
                 `Se intentó crear la nueva regla "${symbol}", pero no se pudo encontrar "${p.value}" para producir la subregla "${p.key}"` 
                 : `Tried to create new rule: "${symbol}", but couldn't find "${p.value}" to produce "${p.key}" subrule`;
               console.error(errorMsg);
             };
-            this.grammar[symbol][p.key] = [this.selectGrammarRule(ruleArray)];
+            grammar[symbol][p.key] = [this.selectGrammarRule(ruleArray)];
           }
         }
       }
@@ -249,6 +286,34 @@ class Aventura {
     return tempString;
   }
 
+  // IGRAMA UTILITIES
+  decodeDrawing(data) {
+    if (data === '') {
+      return []
+    }
+    const [type, content, attribute] = data.split('%%');
+    let decoded = {};
+    if (type === 'vector') {
+      decoded.content = content.split('**').map(doodle => {
+        const [color, weight, v] = doodle.split('&');
+        const xy = [];
+        xy.color = color;
+        xy.weight = weight;
+        if (v === undefined) return xy
+        const flat = v.split(',');
+        for (let i = 0; i < flat.length; i += 2) {
+          xy.push([+flat[i], +flat[i + 1]])
+        }
+        return xy
+      });
+    } else {
+      decoded.content = content
+    }
+    decoded.attribute = attribute;
+    decoded.type = type;
+    return decoded
+  }
+
   // MARKOV MODEL
 
   async getMarkovModel(filename, ngram = 1, save = false) {
@@ -300,24 +365,28 @@ class Aventura {
 
   markovChain(chainLength, seed, newLineProbability = 0.1) {
     // Create a Markov sequence of the defined length
-    let result = seed === undefined || this.markov[seed] === undefined ? Object.keys(this.markov)[Math.floor(Math.random() * Object.keys(this.markov).length)] : seed;
+    let result = seed === undefined || this.markov[seed] === undefined ? this.randomMarkovWord() : seed;
     let currentGram = result;
   
     for (let chain = 0; chain < chainLength - 1; chain++) {
       let nextWord = this.getNextMarkov(this.markov[currentGram]);
       if (nextWord === undefined) {
-        nextWord = this.getNextMarkov(this.markov[Object.keys(this.markov)[Math.floor(Math.random() * Object.keys(this.markov).length)]]);
+        nextWord = this.getNextMarkov(this.randomMarkovWord());
       }
       currentGram = `${currentGram.split(/\s+/).slice(1).join(" ")} ${nextWord}`;
       result += ` ${nextWord}`;
     }
   
     const formatted = this.formatMarkov(result, newLineProbability);
-  
     return formatted
   }
 
   // MARKOV UTILITIES
+
+  randomMarkovWord() {
+    const choice = Math.floor(Math.random() * Object.keys(this.markov).length);
+    return Object.keys(this.markov)[choice]
+  }
 
   getNextMarkov(data) {
     // Get a new gram element from the defined probabilities
@@ -343,7 +412,6 @@ class Aventura {
         return `. ${c2.toUpperCase()}`
       }
     });
-  
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }
 
@@ -456,6 +524,112 @@ class Aventura {
     console.log("------------------------------------ DIST ------------------------------------");
 
     return this
+  }
+
+  // DRAW IMAGES
+  async showIgrama(layers, cont) {
+    const size = this.igrama.metadata.size;
+    let canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext('2d');
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.fillStyle = 'rgb(255, 255, 255)';
+    ctx.fillRect(0, 0, size, size);
+
+    await this.drawLayers(layers, ctx);
+
+    const dataUrl = canvas.toDataURL();
+    const img = new Image();
+    img.src = dataUrl;
+    if (cont == undefined) {
+      document.body.appendChild(img);
+    } else {
+      document.getElementById(cont).appendChild(img);
+    }
+    canvas.remove();
+  }
+
+  getIgramaText(layers) {
+    const text = layers.map(d => d.attribute).reverse().join(' ');
+    return text
+  }
+
+  async drawLayers(layers, ctx) {
+    for (let [index, layer] of layers.entries()) {
+      if (layer.type === 'url') {
+        const {w, h, x, y} = this.igrama.sections[index];
+        if (this.imgsMemo[layer.content] === undefined) {
+          const img = new Image();
+          img.src = layer.content;
+          this.imgsMemo[layer.content] = await new Promise(resolve => {
+            img.addEventListener('load',() => {resolve(img)}, false)
+          });
+          // img.remove();
+        }
+        ctx.drawImage(this.imgsMemo[layer.content], x, y, w, h);
+      } else if (layer.type == 'vector') {
+        for (let doodle of layer.content) {
+          if (doodle.length === 0) continue
+          const spline = this.getSpline(doodle);
+          this.drawSpline(spline, ctx, doodle.color, doodle.weight);        
+        }
+      }
+    }
+  }
+
+  drawSpline(spline, ctx, color, weight) {
+    ctx.lineWidth = weight;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = 'rgba(0,0,0,0)';
+    ctx.beginPath();
+    for (let i = 0; i < spline.length; i++) {
+      if (i === 0) {
+        ctx.moveTo(...spline[0]);
+      } else {
+        ctx.lineTo(...spline[i])
+      }
+    }
+    ctx.stroke();
+  }
+  
+  getSpline(points) {
+    let spline = [];
+    for (let i = 0; i < points.length - 1; i++) {
+      const p = [];
+      p[0] = i > 0 ? points[i - 1] : points[0];
+      p[1] = points[i];
+      p[2] = points[i + 1];
+      p[3] = i < points.length - 2 ? points[i + 2] : points[points.length -1];
+      
+      for (let t = 0; t < 1; t += 0.05) {
+        const s = this.getSplinePoint(t, p);
+        spline.push(s);			
+      }
+    }
+    return spline
+  }
+  
+  getSplinePoint(t, p) {
+    const p1 = Math.floor(t) + 1;
+    const p2 = p1 + 1;
+    const p3 = p2 + 1;
+    const p0 = p1 - 1;
+  
+    const tt = t * t;
+    const ttt = tt * t;
+  
+    const q1 = -ttt + 2.0*tt - t;
+    const q2 = 3.0*ttt - 5.0*tt + 2.0;
+    const q3 = -3.0*ttt + 4.0*tt + t;
+    const q4 = ttt - tt;
+  
+    const tx = 0.5 * (p[p0][0] * q1 + p[p1][0] * q2 + p[p2][0] * q3 + p[p3][0] * q4);
+    const ty = 0.5 * (p[p0][1] * q1 + p[p1][1] * q2 + p[p2][1] * q3 + p[p3][1] * q4);
+  
+    return [tx,ty]
   }
   
   // INTERACTIVE STORY DOM UTILITIES
