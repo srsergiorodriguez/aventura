@@ -1,5 +1,9 @@
 #RELEASE NOTES:
 
+## 2.2.0
+- Added markov chains functions
+- Added igrama support (generative images using aventura grammars)
+
 ## 2.1.1
 - Intensive refactoring in this new release
 - Now main functions are chainable
