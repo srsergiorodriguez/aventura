@@ -498,13 +498,13 @@ All suggestions are welcome.
 This library aims to be bilingual (Spanish-English), so it takes more time to implement some functions or to write documentation.
 
 ## Version, license, copyright
-v2.1.1
+v2.3.1
 
 (c) Sergio Rodríguez Gómez @srsergiorodriguez
 
 [MIT LICENSE](./LICENSE)
 
-2021
+2022
 
 ##### Colaborators
 @perropulgoso

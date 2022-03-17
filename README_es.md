@@ -74,9 +74,7 @@ Los posibles resultados de un texto generado con esta gramática son: "Hola y ha
 
 Y para obtener un texto generado debes usar la función **'expandirGramatica'**, pasando como argumento el nombre del tronco (que en este caso es 'tronco').
 
-
 `const textoGenerado = aventura.expandirGramatica('tronco');`
-
 
 O, convenientemente, puedes encadenar las funciones de pasar la gramática y luego expandirla, así tienes todo en una sola línea:
 
