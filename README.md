@@ -54,7 +54,7 @@ In Aventura you represent the tree of your grammar by using an *object* that con
 
 Then, a very simple tree or grammar, with just one trunk and a branch, would look like this:
 
-```
+```Javascript
 const tree = {
     trunk: ["Hello and <branch>"],
     branch: ["good day", "goodbye", "hasta la vista"]
@@ -77,7 +77,7 @@ Or, conveniently, you can chain both functions:
 
 The previous example was a very simple text generator, but you can make much more complex things. Let's create another grammar and include more branches, and even sub-branches:
 
-```
+```Javascript
 const grammmar = {
     sentence: ["A <attribute> <animal>"],
     animal: ["cat", "giraffe", "squirrel"],
@@ -116,11 +116,11 @@ Aventura will show you in the console the origin of all errors, like this:
 #### Defining rule option probabilities
 If you want an option in a rule to have more probabilites of appearing in the final text, you can create a new property called 'prob' in the array that represents the rule. Ideally, each option must have a probability value between 0 and 1, and the sum of all values must be equal to 1:
 
-```
+```Javascript
 const grammar = {
     colors: ["green", "blue", "red", "purple"]
 };
-grammar.colors.prob = [0.1, 0.2, 0.1, 0.6]
+grammar.colors.prob = [0.1, 0.2, 0.1, 0.6];
 ```
 
 In the example above, "purple" will be more likely to appear.
@@ -128,7 +128,7 @@ In the example above, "purple" will be more likely to appear.
 #### Applying transformations
 You can apply some transformations to the text that is expanding from some rule. For example, you can capitalize the first letter in the string of text, or you can capitalize all of the letters of the string. Transformations must be indicated inside a pair of '#' symbols after the name of the reference. You can apply multiple transformations (split them by commas):
 
-```
+```Javascript
 const grammar = {
     sentence: ["<animal#ALLCAPS#>"],
     animal: ["cat", "giraffe", "squirrel"]
@@ -145,7 +145,7 @@ For now, the possible transformations are:
 #### Creating new rules
 You can create new rules while your grammar expands. This is useful to fixate rules that you want to produce generatively but also that you want tou use consistently in your new text. For example, think about a tale in which the name of a hero appears multiple times in the story. You want that the name of the hero changes with each new generation of the text, but you also want that the same name is used throughout the story. New rules are created by defining a new name for the rule (inside `$` symbol), followed by a set of sub-rules encolsed in `[ `and `]`: `[key1:value1,key2:value2...]`. Each sub-rule must be specified in key-value pairs, and the set of sub-rules must be separated by commas:
 
-```
+```Javascript
 const grammar = {
     sentence: ["$hero$[name:animal,attribute:adjective]This is the story of <hero.name>. You must know that <hero.name> was very <hero.attribute>"],
     animal: ["cat", "giraffe", "squirrel"],
@@ -168,13 +168,13 @@ A *simple scene*, which shows a continue button, and when the button is pressed,
 
 This is the structure of a couple of simple scenes:
 
-```
+```Javascript
 const scenes = {
-  start {
+  start: {
     text: "Once upon a time, there was a squashed circle", // this is the text of the scene
     scene: "end" // this is the name of the next scene
   },
-  end {
+  end: {
     text: "Looks like the story took an ellipsis",
     deadEnd: true
   }
@@ -195,9 +195,9 @@ Or, conveniently, you can chain both functions:
 
 The other type of scene is a **scene with options**. Here, just as with the simple scene, you should specify a text, but also you must define an array of options. The array must contain objects with the text of the buttons that will be displayed for interaction, a text that will be shown after taking a particular decision, and the scene that will follow after pressing a button:
 
-```
+```Javascript
 const scenes = {
-  start {
+  start: {
     text: "Once upon a time, there was a squashed circle",
     options: [
       {
@@ -212,13 +212,12 @@ const scenes = {
       }
     ]
   },
-  },
   end1: {
     text: "Looks like the story took an ellipsis",
     deadEnd: true
-  }
+  },
   end2: {
-    text: "Perfect, a round end"
+    text: "Perfect, a round end",
     deadEnd: true
   }
 }
@@ -245,9 +244,9 @@ This means that the scene strt referenced in introduction is either misspelled o
 #### Add images!
 :surfer: You can also add images to a scene by defining the parameter 'image' with an imagepath:
 
-```
+```Javascript
 const scenes = {
-  start {
+  start: {
     text: "Once upon a time, there was a squashed circle",
     image: "./squashed.jpg",
     options: [
@@ -260,11 +259,10 @@ const scenes = {
       {
         btn: "unsquash",
         text: "...unsquashing",
-        scene: "end2"
+        scene: "end2",
         image: "./round.jpg"
       }
     ]
-  },
   },
   end1: {
     text: "Looks like the story took an ellipsis",
@@ -281,7 +279,7 @@ const scenes = {
 
 This is a powerful functionality, you can combine generative text produced with a grammar into the development of your story. To do it, you must first pass a grammar to your intance of Aventura as well as your scenes. In this way, your scenes can contain strings that contain references to rules in the grammar:
 
-```
+```Javascript
 const grammar = {
   attributes: ["brave", "impatient", "elusive", "smart"],
   green: ["greenful", "greenish"],
@@ -340,7 +338,7 @@ aventura.setGrammar(grammar).setScenes(scenes).startAdventure('cover');
 #### Custom configuration
 You can change some options if you pass a configuration object when you create an instance of Aventura:
 
-```
+```Javascript
 const config = {
       typewriterSpeed: 50,
       defaultCSS: true,
@@ -359,8 +357,8 @@ Change the speed of the typewritter with the parameter **typewriterSpeed**. The 
 ##### Overwrite CSS styling
 To disable the default style of the interface, pass false in the parameter **defaultCSS**. Then you can customize the style as you prefer. For reference, this is the default styling:
 
-```
-// General container
+```CSS
+/* General container */
 
 #storygeneraldiv {
   box-sizing: border-box;
@@ -368,14 +366,14 @@ To disable the default style of the interface, pass false in the parameter **def
   max-width: 600px;
 }
 
-// Container of the story
+/* Container of the story */
 
 #storydiv {
   box-sizing: border-box;
   border: solid black 1px;
 }
 
-// Text paragraph
+/* Text paragraph */
 
 .storyp {
   box-sizing: border-box;
@@ -385,7 +383,7 @@ To disable the default style of the interface, pass false in the parameter **def
   font-family: 'Courier New', Courier, monospace;
 }
 
-// Option buttons
+/* Option buttons */
 
 .storybutton {
   padding: 3px;
@@ -401,7 +399,7 @@ To disable the default style of the interface, pass false in the parameter **def
   background: black;
 }
 
-// Image
+/* Image */
 
 .storyimage {
   max-width: 100%;
@@ -411,7 +409,22 @@ To disable the default style of the interface, pass false in the parameter **def
   margin-right: auto;
 }
 
-// Configuration for small devices
+/* Clickable area in image story */
+.storyimage-area {
+  position: absolute;
+  cursor: pointer;
+  text-align: center;
+  color: red;
+  background: black;
+  border-radius: 100px;
+}
+
+.storyimage-area:hover {
+  background: white;
+  color: black;
+}
+
+/* Configuration for small devices */
 
 @media screen and (max-device-width: 500px) {
   #storygeneraldiv {

@@ -57,7 +57,7 @@ En Aventura, para representar el árbol de tu gramática en JavaScript debes dec
 
 Así, un árbol o gramática muy simple, con solo un tronco y una rama, se vería así:
 
-```
+```Javascript
 const arbol = {
     tronco: ["Hola y <rama>"],
     rama: ["hasta luego", "adiós", "hasta nunca"]
@@ -84,7 +84,7 @@ O, convenientemente, puedes encadenar las funciones de pasar la gramática y lue
 
 Ese que vimos es un generador muy simple, pero puede ser más complejo. Ahora incluyamos más ramas, e incluso subramas:
 
-```
+```Javascript
 const gramatica = {
     frase: ["Una <animal> <cualidad>"],
     animal: ["gata","jirafa","ardilla"],
@@ -124,11 +124,11 @@ Así, Aventura te mostrará en la consola el origen de todos los errores en gram
 #### Definir probabilidades en las opciones de una regla
 Si quieres que alguna opción en una regla tenga más probabilidades de aparecer cuando se expande el texto final puedes crear una nueva propiedad llamada 'prob' en la *array* que representa la regla. Idealmente, cada opción debe tener un valor de probabilidad entre 0 y 1, y la suma de todos los valores deberá ser igual a 1:
 
-```
+```Javascript
 const gramatica = {
     colores: ["verde", "azul", "rojo", "púrpura"]
 };
-gramatica.colores.prob = [0.1, 0.2, 0.1, 0.6]
+gramatica.colores.prob = [0.1, 0.2, 0.1, 0.6];
 ```
 
 En el ejemplo anterior, "púrpura" tendrá más probabilidad de aparecer que las demás opciones.
@@ -136,7 +136,7 @@ En el ejemplo anterior, "púrpura" tendrá más probabilidad de aparecer que las
 #### Transformar el texto definido por una regla
 Puedes aplicar ciertas transformaciones al texto que se expande desde alguna regla. Por ejemplo, puedes poner en mayúsculas la primera letra de la cadena de texto o puedes poner en mayúsculas todas sus letras. Si es el caso, las tranformaciones se deben indicar dentro de un par de numerales '#' luego del nombre de una regla referenciada. Si quieres poner varias transformaciones, sepáralas con comas:
 
-```
+```Javascript
 const gramatica = {
     frase: ["<animal#ALLCAPS#>"],
     animal: ["gato", "jirafa", "ardilla"]
@@ -152,7 +152,7 @@ En el momento, las tranformaciones posibles son:
 #### Crear nuevas reglas
 Puedes crear nuevas reglas mientras tu gramática se expande. Esto es útil para fijar reglas que quieres producir generativamente pero que además usarás recurrentemente en tu nuevo texto. Por ejemplo, piensa en un personaje que aparece varias veces en una historia; quieres que su nombre se decida a partir de una lista de opciones, pero también quieres que, una vez se haya elegido al comienzo de la historia, se siga usando consistentemente en el resto de la historia. Las reglas nuevas se crean definiendo un nuevo nombre para la regla (encerrado en `$`), seguido de un set de subreglas, encerradas en paréntesis cuadrados: `[clave1:valor1,clave2,valor2...]`. Cada subregla debe especificarse en pares de clave-valor, y el conjunto de subreglas deben separarse por comas:
 
-```
+```Javascript
 const gramatica = {
     frase: ["$heroe$[nombre:animal,atributo:adjetivo]Esta es la historia de una <heroe.nombre>. Debes saber que la <heroe.nombre> fue muy <heroe.atributo>"],
     animal: ["gata", "jirafa", "ardilla"],
@@ -176,7 +176,7 @@ Una **escena simple**, que solo muestra un texto y un botón de continuar (o de 
 
 Esta es la estructura de un par de objetos de escena simple en un objeto de escenas:
 
-```
+```Javascript
 const escenas = {
   inicio: {
     texto: "Érase una vez un círculo aplastado", // aquí va el texto de la escena
@@ -203,7 +203,7 @@ O, convenientemente, puedes encadenar las dos funciones en una sola línea:
 
 El otro tipo de escena es una **escena con opciones**. Aquí, igual que con la escena simple, debes especificar un texto, pero también debes definir una lista de opciones. La lista debe contener objetos con el texto de los botones que explican las decisiones, un texto que se presentará luego de tomar la decisión, y la escena a la que llevará haber tomado la decisión:
 
-```
+```Javascript
 const escenas = {
   inicio: {
     texto: "Érase una vez un círculo...", // aquí va el texto de la escena
@@ -252,7 +252,7 @@ Esto quiere decir que hay que revisar si está mal escrito el nombre de la escen
 #### ¡Añade imágenes!
 :surfer: También puedes añadir imágenes a tus escenas definiendo el parámetro 'imagen' para establecer el *path* o camino de una imagen en la carpeta de tu proyecto, tanto en tus escenas como en los subobjetos de decisión:
 
-```
+```Javascript
 const escenas = {
   inicio: {
     texto: "Érase una vez un círculo...", // aquí va el texto de la escena
@@ -288,7 +288,7 @@ const escenas = {
 #### Usar texto generativo en las historias
 Esto es una función poderosa, puedes combinar el texto generativo que produces con una gramática junto con el desarrollo de tu historia. Para hacerlo, debes primero pasar tanto una gramática a tu instancia de Aventura como tus escenas. Así, tus escenas pueden contener *strings* que incluyen referencias a las reglas de la gramática. Aunque esto complica las cosas, es muy útil para crear historias en las que las decisiones de tus lectores no solo afectan el desarrollo de la historia sino que también modifican el propio texto que leerán en las escenas, sea porque se genera uno nuevo con cada nueva ejecución de la historia, sea porque las propias decisiones crean nuevas reglas dentro de la gramática. Para entenderlo mejor, aquí dejo un ejemplo concreto:
 
-```
+```Javascript
 const gramatica = {
   atributos: ["valiente", "esperanzada", "impaciente", "escurridiza"],
   verde: ["verdosísimo", "verdoláceo", "verdístico"],
@@ -303,7 +303,7 @@ const escenas = {
 Una historia increíble`,
     escena: 'introduccion'
   },
-  introduccion:{
+  introduccion: {
     texto:"Te voy a contar la historia de una ardilla muy <ardilla.atributo>...",
     escena: 'inicio'
   },
@@ -347,7 +347,7 @@ aventura.fijarGramatica(gramatica).fijarEscenas(escenas).iniciarAventura('portad
 #### Configuración personalizada
 Puedes cambiar algunas opciones si pasas un objeto de configuración cuando creas una nueva instancia de Aventura:
 
-```
+```Javascript
 const config = {
       typewriterSpeed: 50,
       defaultCSS: true,
@@ -367,8 +367,8 @@ Si el valor de **typewriterSpeed** es 0, se desactiva el efecto y el texto apare
 ##### Sobreescribir el estilo de la interfaz
 Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetro **defaultCSS**. Puedes personalizar el estilo como quieras. Como referencia, este es el estilo por defecto de la interfaz:
 
-```
-// Contenedor general
+```CSS
+/* Contenedor general */
 
 #storygeneraldiv {
   box-sizing: border-box;
@@ -376,14 +376,14 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
   max-width: 600px;
 }
 
-// Contenedor de la historia
+/* Contenedor de la historia */
 
 #storydiv {
   box-sizing: border-box;
   border: solid black 1px;
 }
 
-// Párrafo de texto
+/* Párrafo de texto */
 
 .storyp {
   box-sizing: border-box;
@@ -393,7 +393,7 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
   font-family: 'Courier New', Courier, monospace;
 }
 
-// Botón de opciones
+/* Botón de opciones */
 
 .storybutton {
   padding: 3px;
@@ -409,7 +409,7 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
   background: black;
 }
 
-// Imagen
+/* Imagen */
 
 .storyimage {
   max-width: 100%;
@@ -419,7 +419,23 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
   margin-right: auto;
 }
 
-// Configuración para dispositivos pequeños
+/* Área clickeable en la imagen */
+
+.storyimage-area {
+  position: absolute;
+  cursor: pointer;
+  text-align: center;
+  color: red;
+  background: black;
+  border-radius: 100px;
+}
+
+.storyimage-area:hover {
+  background: white;
+  color: black;
+}
+
+/* Configuración para dispositivos pequeños */
 
 @media screen and (max-device-width: 500px) {
   #storygeneraldiv {
@@ -439,6 +455,7 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
 ```
 
 ## Resumen rápido
+(? quiere decir opcional)
 
 General:
 
@@ -486,8 +503,6 @@ Historia interactiva:
 }
 ```
 
-(? quiere decir opcional)
-
 ## Ejemplos
 * Un ejemplo de un generador de poemas: [Demostración](https://srsergiorodriguez.github.io/autopoeta/) / [Gramática](https://github.com/srsergiorodriguez/autopoeta/blob/master/docs/assets/autopoetadb.json)
 
@@ -506,13 +521,13 @@ Algunas implementaciones que quisiera añadir en el futuro son:
 * Crear una interfaz gráfica para diseñar las gramáticas y las historias de forma no líneal (como un árbol) que sea utilizable y exportable
 
 ## Versión, licencia y copyright
-v2.1.1
+v2.3.1
 
 (c) Sergio Rodríguez Gómez @srsergiorodriguez
 
 Esta librería está amparada bajo una [licencia MIT](./LICENSE)
 
-2021
+2022
 
 ##### Colaboradores
 @perropulgoso
