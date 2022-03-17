@@ -32,7 +32,7 @@ En tu código de Javascript, para empezar a usar la librería, crea una instanci
       - [Transformar el texto definido por una regla](#transformar-el-texto-definido-por-una-regla)
       - [Crear nuevas reglas](#crear-nuevas-reglas)
   - [Historias interactivas basadas en texto :alien:](#historias-interactivas-basadas-en-texto-alien)
-    - [The basics](#the-basics)
+    - [Lo básico](#lo-básico-1)
     - [Corregir errores](#corregir-errores-1)
     - [Historias interactivas - opciones avanzadas](#historias-interactivas---opciones-avanzadas)
       - [¡Añade imágenes!](#añade-imágenes)
@@ -164,7 +164,7 @@ const textoGenerado = aventura.fijarGramatica(gramatica).expandirGramatica('fras
 
 ## Historias interactivas basadas en texto :alien:
 
-### The basics
+### Lo básico
 
 Aventura te permite crear [Historias interactivas basadas en texto](https://es.wikipedia.org/wiki/Aventura_conversacional), en las que debes tomar decisiones que cambian el rumbo de la historia. Aventura produce una interfaz muy simple que permite navegar una historia interactiva de este tipo y controla el camino de decisiones que siguen tus lectores. Aunque viene con unos ajustes por defecto, el estilo de tal interfaz es muy personalizable si conoces los fundamentos [CSS](https://developer.mozilla.org/es/docs/Web/CSS).
 
