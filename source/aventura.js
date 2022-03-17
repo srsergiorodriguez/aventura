@@ -1,5 +1,5 @@
 /*
-Aventura v2.2.0
+Aventura v2.3.1
 A library for making biterature / Una librería para hacer biteratura
 Copyright (c) 2020 - 2022 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
 Released under MIT License
@@ -11,7 +11,8 @@ class Aventura {
     this.options = {
       typewriterSpeed: 50,
       defaultCSS: true,
-      adventureContainer: undefined
+      adventureContainer: undefined,
+      sceneCallback: (s)=>{return s} // Returns the current scene
     }
     if (options) {this.options = Object.assign(this.options,options)}
     this.grammarError = false;
@@ -36,7 +37,8 @@ class Aventura {
     this.mostrarIgrama = this.showIgrama;
     this.textoIgrama = this.getIgramaText;
 
-    this.imgsMemo = {};
+    this.imgsMemo = {}; // memoiza imágenes de los igramas
+    this.storyPreload = {}; // precarga imágenes para la historia interactiva
   }
 
   // MAIN INPUT FUNCTIONS
@@ -59,7 +61,18 @@ class Aventura {
     this.scenes = scenes;
     for (let key of Object.keys(scenes)) {
       this.scenes[key].key = key;
+
+      // preload images
+      const im = this.scenes[key].image || this.scenes[key].imagen;
+      if (im !== undefined) {
+        if (this.storyPreload[im] === undefined) {
+          this.storyPreload[im] = new Image();
+          this.storyPreload[im].src = im
+          this.storyPreload[im].className = "storyimage";
+        }
+      }
     }
+    
     return this
   }
 
@@ -175,16 +188,38 @@ class Aventura {
     const prevdiv = document.getElementById("storydiv");
     if (prevdiv) {generaldiv.removeChild(prevdiv)};
 
+    // de pronto on window resize redibujar scene
+
     const storydiv = document.createElement("div");
     storydiv.id = "storydiv";
     generaldiv.appendChild(storydiv);
 
     // Create image (if there's a path available)
     if (scene.image || scene.imagen) {
-      const image = document.createElement("img");
-      image.className = "storyimage";
-      image.src = scene.image || scene.imagen;
-      storydiv.appendChild(image);
+      const storyImageContainer = document.createElement("div");
+      storyImageContainer.className = "storyimage-container";
+
+
+      // node.cloneNode(true);
+      const src = scene.image || scene.imagen;
+      const image = this.storyPreload[src];
+
+
+      storyImageContainer.appendChild(image);
+      storydiv.appendChild(storyImageContainer);
+
+      if (scene.areas) { // clickable areas that take to scenes
+        if (image.complete) {
+          this.setAreas(image, storyImageContainer, scene.areas);
+        } else {
+          image.onload = () => {
+            this.setAreas(image, storyImageContainer, scene.areas);
+          };
+        }
+        window.onresize = () => {
+          this.goToScene(scene);
+        }
+      }
     }
 
     // Create text paragraph
@@ -194,6 +229,43 @@ class Aventura {
     storydiv.appendChild(paragraph);
 
     this.typewriter(paragraph,scene);
+    this.options.sceneCallback(scene);
+  }
+
+  setAreas(imgSource, parent, areas) {
+    // Parts of an image that are used to go to another scene
+    // Adapts according to responsive changes in image size
+    const dims = imgSource.getBoundingClientRect();
+    const dimsC = parent.getBoundingClientRect();
+    for (let a of areas) {
+      let area = document.createElement("div");
+      area.className = "storyimage-area";
+      const left = ((a.x-(Math.floor(a.w/2))) * dims.width)/imgSource.naturalWidth;
+      area.style.left = `${dims.left - dimsC.left + left}px`;
+      const top = ((a.y-(Math.floor(a.h/2))) * dims.height)/imgSource.naturalHeight;
+      area.style.top = `${dims.top - dimsC.top + top}px`;
+      area.style.minWidth = `${a.w*dims.width/imgSource.naturalWidth}px`;
+      area.style.minHeight = `${a.h*dims.height/imgSource.naturalHeight}px`;
+      area.innerHTML = a.text || a.texto;
+      parent.appendChild(area);
+
+      area.style.fontSize = `${40*dims.height/imgSource.naturalHeight}px`;
+      area.onclick = () => {
+        const e = a.scene || a.escena;
+        this.goToScene(this.scenes[e]);
+      }
+
+      if (a.tooltip !== undefined) {
+        area.onmouseover = () => {
+          area.innerHTML = a.tooltip || a.tooltip
+          area.style.zIndex =  '100';
+        }
+        area.onmouseout = () => {
+          area.innerHTML = a.text || a.texto;
+          area.style.zIndex =  '0';
+        }
+      }
+    }
   }
 
   typewriter(paragraph,scene) {
@@ -355,7 +427,8 @@ class Aventura {
     }
   
     if (save) {
-      this.saveJSON(mProbs, "markovModel");
+      const filenameParts = filename.split('/');
+      this.saveJSON(mProbs, `${filenameParts[filenameParts.length-1]}_markovModel_${ngram}N`);
     }
     
     return mProbs;
@@ -373,7 +446,10 @@ class Aventura {
       if (nextWord === undefined) {
         nextWord = this.getNextMarkov(this.randomMarkovWord());
       }
-      currentGram = `${currentGram.split(/\s+/).slice(1).join(" ")} ${nextWord}`;
+      let tempList = currentGram.split(/\s+/);
+      tempList.push(nextWord);
+      tempList = tempList.slice(1).join(' ');
+      currentGram = tempList;
       result += ` ${nextWord}`;
     }
   
@@ -671,13 +747,40 @@ const defaultStyling =
   color: white;
   background: black;
 }
-.storyimage {
+
+.storyimage-container {
+  box-sizing: content-box;
+  position: relative;
+  padding: 10px;
   max-width: 100%;
   max-height: 70vh;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
+  margin: auto;
+  display: flex;
 }
+
+.storyimage {
+  justify-content: center;
+  max-width: 100%;
+  max-height: 70vh;
+  margin: auto;
+  border-radius: 20px;
+  display: block;
+}
+
+.storyimage-area {
+  position: absolute;
+  cursor: pointer;
+  text-align: center;
+  color: red;
+  background: black;
+  border-radius: 100px;
+}
+
+.storyimage-area:hover {
+  background: white;
+  color: black;
+}
+
 @media screen and (max-device-width: 500px) {
   #storygeneraldiv {
     max-width:100%;
@@ -693,3 +796,14 @@ const defaultStyling =
   }
 }
 `
+
+/*
+CHANGELOG
+historia interactiva
+- sceneCallback: devuelve la escena actual
+- setAreas: se pueden ajustar áreas con botones
+- las imágenes se precargan para que sea más fluida la interacción
+markov
+- corregido el error de separación de las cadenas de markov
+- guarda el número de ngramas en el nombre del filename del modelo markov
+*/
