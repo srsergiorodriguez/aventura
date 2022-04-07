@@ -604,16 +604,17 @@ class Aventura {
 
   // DRAW IMAGES
   async showIgrama(layers, cont) {
-    const size = this.igrama.metadata.size;
+    const width = this.igrama.metadata.width;
+    const height = this.igrama.metadata.height;
     let canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = width;
+    canvas.height = height;
 
     const ctx = canvas.getContext('2d');
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     ctx.fillStyle = 'rgb(255, 255, 255)';
-    ctx.fillRect(0, 0, size, size);
+    ctx.fillRect(0, 0, width, height);
 
     await this.drawLayers(layers, ctx);
 
@@ -806,4 +807,9 @@ historia interactiva
 markov
 - corregido el error de separación de las cadenas de markov
 - guarda el número de ngramas en el nombre del filename del modelo markov
+
+POR HACER
+- Documentación de igramas y cadenas de markov
+- Poder hacer escenas con opciones que no tengan pantalla de retroalimentación
+- Integrar igramas a historias interactivas
 */
