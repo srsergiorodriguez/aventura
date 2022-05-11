@@ -1,8 +1,29 @@
 /*
-Aventura v2.3.1
+Aventura v2.3.5
 A library for making biterature / Una librería para hacer biteratura
 Copyright (c) 2020 - 2022 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
 Released under MIT License
+*/
+
+/*
+CHANGELOG
+historia interactiva
+- sceneCallback: devuelve la escena actual
+- setAreas: se pueden ajustar áreas con botones
+- las imágenes se precargan para que sea más fluida la interacción
+markov
+- corregido el error de separación de las cadenas de markov
+- guarda el número de ngramas en el nombre del filename del modelo markov
+- cargar modelo debe ser incluir la extension en el path
+- ahora se pueden hacer igramas con gifs pero mostrar igrama tiene este orden (resultado, formato, contenedor)
+- se pueden quitar elementos de las arrays sobre la marcha cuando se crean nuevas reglas (poniendo  un '-' antes del key)
+
+POR HACER
+- Documentación de igramas y cadenas de markov
+- Documentación de áreas
+
+- Poder hacer escenas con opciones que no tengan pantalla de retroalimentación !!!!!!
+- Integrar igramas a historias interactivas !!!!!!
 */
 
 class Aventura {
@@ -28,9 +49,11 @@ class Aventura {
     this.probarEscenas = this.testScenes;
 
     this.cargarJSON = this.loadJSON;
+    this.modeloMarkov = this.getMarkovModel;
     this.fijarMarkov = this.setMarkov;
     this.cadenaMarkov = this.markovChain;
     this.probarDistribucion = this.testDistribution;
+    this.markovSeparator = /[^\S\r\n]+/i;
 
     this.fijarIgrama = this.setIgrama;
     this.expandirIgrama = this.expandIgrama;
@@ -96,12 +119,7 @@ class Aventura {
   }
 
   grammarRuleRecursion(string, g) {
-    let grammar;
-    if (g === undefined) {
-      grammar = this.grammar;
-    } else {
-      grammar = g;
-    }
+    let grammar = g || this.grammar;
     let newstring = this.setNewRules(string); // Clean string from recursive rules and create the rules
     const ruleList = newstring.match(/<[\w\d.,/#]+>/gi); // Create a list of rules to be developed from the string
     if (!ruleList) {return newstring} // Return the string if there are no new rules to develop
@@ -138,16 +156,16 @@ class Aventura {
     // Check if there are recursive rules in a string and add them to the grammar
     // Return the string without recursive rules
     let newstring = string;
-    const rules = newstring.match(/\$[\w\d]+\$\[[\w\d:,]+\]/ig);
+    const rules = newstring.match(/\$[\w\d]+\$\[[\w\d:,-]+\]/ig);
     if (rules) {
       while (rules.length) {
         const newrule = rules.pop(); // remove top rule from rule list
         newstring = newstring.replace(newrule,""); // remove rule text string from original string
-        const { symbol, pairsString } = /\$(?<symbol>[\w\d]+)\$\[(?<pairsString>[\w\d:,]+)\]/i.exec(newrule).groups; // get symbol and string of listed values
-        const pairs = pairsString.match(/[\w\d]+:[\w\d]+/gi).map(d=>(/(?<key>[\w\d]+)[ ]?:[ ]?(?<value>[\w\d]+)/gi.exec(d)).groups); // format the string of listed values into an array of objects
+        const { symbol, pairsString } = /\$(?<symbol>[\w\d]+)\$\[(?<pairsString>[\w\d:,-]+)\]/i.exec(newrule).groups; // get symbol and string of listed values
+        const pairs = pairsString.match(/[-]?[\w\d]+:[\w\d]+/gi).map(d=>(/(?<remove>[-]?)(?<key>[\w\d]+)[ ]?:[ ]?(?<value>[\w\d]+)/gi.exec(d)).groups); // format the string of listed values into an array of objects
         if (pairs) {
           grammar[symbol] = grammar[symbol] || {};
-          // asign key-value pairs to symbol
+          // assign key-value pairs to symbol
           for (let p of pairs) {
             const ruleArray = grammar[p.value];
             if (!ruleArray) {
@@ -156,7 +174,13 @@ class Aventura {
                 : `Tried to create new rule: "${symbol}", but couldn't find "${p.value}" to produce "${p.key}" subrule`;
               console.error(errorMsg);
             };
-            grammar[symbol][p.key] = [this.selectGrammarRule(ruleArray)];
+            const remove = p.remove === '-' ? true : false; // if the symbol '-' is present before the key, remove the choice from the rulearray
+            const assigned = this.selectGrammarRule(ruleArray);
+            if (remove) {
+              const choiceIndex = ruleArray.indexOf(assigned);
+              grammar[p.value] = [...ruleArray.slice(0, choiceIndex), ...ruleArray.slice(choiceIndex + 1)];
+            }
+            grammar[symbol][p.key] = [assigned];
           }
         }
       }
@@ -167,8 +191,6 @@ class Aventura {
   // INTERACTIVE STORY
 
   startAdventure(start) {
-    const titleContent = this.scenes[start].text || this.scenes[start].texto;
-    document.title = this.grammar ? this.grammarRuleRecursion(titleContent) : titleContent; // Change the title of html page to adventure name
     if (this.options.defaultCSS) {this.setCSS()};
 
     // Create the div that will contain the adventure
@@ -321,6 +343,7 @@ class Aventura {
 
   selectGrammarRule(array) {
     // Pick a random rule from an array of rules
+    if (array.length === 0) return ''
     if (array.prob) {
       const chooser = Math.random() * array.prob.reduce((a,c)=>a+c);
       let count = 0;
@@ -331,7 +354,9 @@ class Aventura {
         count += array.prob[i];
       }
     }
-    return array[Math.floor(Math.random()*array.length)];
+    const choiceIndex = Math.floor(Math.random()*array.length);
+    const choice = array[choiceIndex];
+    return choice
   }
 
   getNestedObject(object, pathArray) {
@@ -389,10 +414,10 @@ class Aventura {
   // MARKOV MODEL
 
   async getMarkovModel(filename, ngram = 1, save = false) {
-    let text = await (await fetch(`./${filename}.txt`)).text();
+    let text = await (await fetch(`./${filename}`)).text();
     text = text.replace(/([,:.;])/g, " $1").replace(/[()\¿¡!?”“—-]/g, "").toLowerCase();
   
-    const words = text.split(/\s+/);
+    const words = text.split(this.markovSeparator);
     const fragments = {};
   
     for (let i = 0; i < words.length - ngram; i ++) {
@@ -428,7 +453,7 @@ class Aventura {
   
     if (save) {
       const filenameParts = filename.split('/');
-      this.saveJSON(mProbs, `${filenameParts[filenameParts.length-1]}_markovModel_${ngram}N`);
+      this.saveJSON(mProbs, `${filenameParts[filenameParts.length-1]}_markovModel_${ngram}N.json`);
     }
     
     return mProbs;
@@ -446,7 +471,7 @@ class Aventura {
       if (nextWord === undefined) {
         nextWord = this.getNextMarkov(this.randomMarkovWord());
       }
-      let tempList = currentGram.split(/\s+/);
+      let tempList = currentGram.split(this.markovSeparator);
       tempList.push(nextWord);
       tempList = tempList.slice(1).join(' ');
       currentGram = tempList;
@@ -501,9 +526,9 @@ class Aventura {
     // FOR BROWSER
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2)], {
-      type: "text/plain"
+      type: "application/json"
     }));
-    a.setAttribute("download", `${filename}.json`);
+    a.setAttribute("download", `${filename.includes('.json') ? filename : filename+'.json'}`);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -603,7 +628,18 @@ class Aventura {
   }
 
   // DRAW IMAGES
-  async showIgrama(layers, cont) {
+  async showIgrama(layers, format = 'png', cont) {
+    const dataUrl = await this.igramaDataUrl(layers, format);
+    const img = new Image();
+    img.src = dataUrl;
+    if (cont == undefined) {
+      document.body.appendChild(img);
+    } else {
+      document.getElementById(cont).appendChild(img);
+    }
+  }
+
+  async igramaDataUrl(layers, format = 'png') {
     const width = this.igrama.metadata.width;
     const height = this.igrama.metadata.height;
     let canvas = document.createElement("canvas");
@@ -613,20 +649,65 @@ class Aventura {
     const ctx = canvas.getContext('2d');
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
-    ctx.fillStyle = 'rgb(255, 255, 255)';
+    ctx.fillStyle = this.igrama.metadata.bg || '#FFFFFF';
     ctx.fillRect(0, 0, width, height);
 
     await this.drawLayers(layers, ctx);
 
-    const dataUrl = canvas.toDataURL();
-    const img = new Image();
-    img.src = dataUrl;
-    if (cont == undefined) {
-      document.body.appendChild(img);
-    } else {
-      document.getElementById(cont).appendChild(img);
+    let dataUrl;
+    if (format === 'png') {
+      dataUrl = canvas.toDataURL();
+    } else if (format === 'gif') {
+      const options = {
+        colorResolution: 7,
+        dither: false,
+        delay: 50,
+      }
+      const gif = new MiniGif(options);
+      gif.addFrame(canvas);
+      const layerWiggle = this.getLayerWiggle(layers);
+      ctx.fillStyle = this.igrama.metadata.bg || '#FFFFFF';
+      ctx.fillRect(0, 0, width, height);
+      await this.drawLayers(layerWiggle, ctx);
+      gif.addFrame(canvas);
+      const buffer = gif.makeGif();
+      const base64 = await this.base64_arraybuffer(buffer);
+      dataUrl = "data:image/gif;base64," + base64;     
     }
-    canvas.remove();
+    canvas.remove(); 
+    return dataUrl
+  }
+
+  async base64_arraybuffer(data) {
+    const base64url = await new Promise((r) => {
+      const reader = new FileReader()
+      reader.onload = () => r(reader.result)
+      reader.readAsDataURL(new Blob([data]))
+    })
+    return base64url.split(",", 2)[1]
+  }
+
+  getLayerWiggle(layers) {
+    const r = 3;
+    const layerWiggle = JSON.parse(JSON.stringify(layers));
+    const rndRng = (a, b) => Math.floor(a + (Math.random() * (b - a)));
+    for (let [i, layer] of layerWiggle.entries()) {
+      if (layer.type === 'vector') {
+        for (let [j, doodle] of layer.content.entries()) {
+          for (let [k, v] of doodle.entries()) {
+            let rnd = Math.random();
+            if (rnd < 0.5) {
+              v[0] += rndRng(-r, r);
+            } else {
+              v[1] += rndRng(-r, r);	
+            }
+          }
+          doodle.color = layers[i].content[j].color;
+          doodle.weight = layers[i].content[j].weight;
+        }
+      }
+    }
+    return layerWiggle
   }
 
   getIgramaText(layers) {
@@ -798,18 +879,513 @@ const defaultStyling =
 }
 `
 
-/*
-CHANGELOG
-historia interactiva
-- sceneCallback: devuelve la escena actual
-- setAreas: se pueden ajustar áreas con botones
-- las imágenes se precargan para que sea más fluida la interacción
-markov
-- corregido el error de separación de las cadenas de markov
-- guarda el número de ngramas en el nombre del filename del modelo markov
+/// MINIGIF!
 
-POR HACER
-- Documentación de igramas y cadenas de markov
-- Poder hacer escenas con opciones que no tengan pantalla de retroalimentación
-- Integrar igramas a historias interactivas
-*/
+class MiniGif {
+  /* 
+  MiniGif 
+  v.1.0.0
+  By Sergio Rodríguez Gómez
+  MIT LICENSE
+  https://github.com/srsergiorodriguez/
+  */
+  constructor(options = {}) {
+    this.colorResolution = Math.max(1, Math.min(7, options.colorResolution || 2));
+    this.colorTableSize = Math.pow(2, this.colorResolution + 1);
+    this.colorTableBytes = this.colorTableSize * 3;
+    this.customPalette = options.customPalette || undefined;
+    this.fileName = options.fileName || 'minigif';
+
+    this.delay = options.delay || 50;
+    this.transparent = options.transparent || false;
+    this.transparentIndex = options.transparentIndex || 0;
+    this.dither = options.dither || false;
+
+    this.width;
+    this.height;
+
+    this.globalColorTable;
+    this.framesPixels = [];
+    this.framesImageData = [];
+    this.allPixels = []; // para poner todos los pixels de todas las imágenes y hacer la quantización
+  }
+
+  async addFrameFromPath(path) {
+    const img = new Image();
+    img.src = path;
+    await new Promise(r => {img.onload = function() {r(true)}});
+    this.addFrame(img);
+  }
+
+  addFrame(frame) {
+    let canvas;
+    let context;
+    if (frame instanceof HTMLCanvasElement) {
+      canvas = frame;
+      context = canvas.getContext("2d");
+    } else if (frame instanceof HTMLImageElement) {
+      const img = frame;
+      canvas = document.createElement('canvas');
+      canvas.width  = img.width;
+      canvas.height = img.height;
+      context = canvas.getContext("2d");
+      context.drawImage(img, 0, 0);
+      img.remove();
+    } else {
+      console.error(`Frame must be a canvas or img element.
+      If you want to add a frame from an image path use addFrameFromPath async function`);
+    }
+
+    if (this.width === undefined || this.height === undefined) {
+      this.width = canvas.width;
+      this.height = canvas.height;
+    }
+  
+    const imageDataObject = context.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = imageDataObject.data;
+    this.framesPixels.push(pixels);
+    this.allPixels = [...this.allPixels, ...pixels];
+
+    if (!(frame instanceof HTMLCanvasElement)) {
+      canvas.remove();
+    }
+    return pixels
+  }
+
+  makeGif() {
+    const colors = this.customPalette || this.medianCutColors(this.allPixels);
+    this.globalColorTable = this.getColorTable(colors);
+    const codeTableData = this.getCodeTable(colors);
+
+    for (let i = 0; i < this.framesPixels.length; i++) {
+      this.framesPixels[i] = this.dither === true ? this.errorDiffusionDither(this.framesPixels[i], colors) : this.framesPixels[i];
+      const [quantizedPixels, indexStream] = this.simpleQuantize(this.framesPixels[i], colors);
+      const codeStream = this.getCodeStream(indexStream, codeTableData);
+      this.framesImageData[i] = this.getImageData(codeStream);
+    }
+
+    const binaryBuffer = this.structureGif();
+    return binaryBuffer
+  }
+
+  getColorTable(colors) {
+    const globalColorTable = new Uint8Array(this.colorTableBytes);
+    let offset = 0;
+    const flatColors = colors.flat();
+    for (let i = 0; i < flatColors.length; i++) {
+      if (i % 4 !== 3) {
+        globalColorTable[i - offset] = flatColors[i];
+      } else {
+        offset++; // compensa canal alpha
+      }
+    }
+    return globalColorTable
+  }
+
+  getCodeTable(colors) {
+    const codeTableDict = {};
+    for (let i = 0; i < colors.length; i++) {
+      codeTableDict[i] = i;
+    }
+    codeTableDict[colors.length] = 'CC';
+    codeTableDict[colors.length + 1] = 'EOI';
+    return {CCindex: colors.length, EOIindex: colors.length + 1, codeTableDict}
+  }
+
+  getCodeStream(indexStream, codeTableData) {
+    // codifica el indexStream usando el algoritmo LZW y ajusta los tamaños de los códigos variables
+    let {CCindex, EOIindex, codeTableDict} = JSON.parse(JSON.stringify(codeTableData));
+    const resetCodeTableData = JSON.parse(JSON.stringify(codeTableData));
+    const minimumCodeSize = Math.max(2, this.colorResolution + 1);
+    let lastCodeSize;
+    let streamStart = 0;
+
+    ///////
+    const byteSize = 8;
+    let bytesStream = [0];
+    const bytemask = 0b11111111;
+    let numCount = 0; // counter of current byte being written
+    let displace = 0;
+    
+    function addCode(code, codeSize) {
+      const newCode = code << displace;
+      const bitsAvailable = byteSize - displace; // bits available in current byte
+      if (bitsAvailable <= codeSize) { // there is not enough space for new code in byte
+        bytesStream[numCount] = (bytesStream[numCount] | newCode) & bytemask; // add all bits possible and crop
+
+        let fraction = code >>> bitsAvailable;
+        let tempDisplace = codeSize - bitsAvailable;
+        numCount++; // advance to next byte
+        bytesStream[numCount] = fraction & bytemask;
+
+        while (tempDisplace >= byteSize) {
+          fraction = fraction >>> byteSize;
+          numCount++; // advance to next byte
+          bytesStream[numCount] = fraction & bytemask;
+          tempDisplace -= byteSize;
+        }
+        displace = tempDisplace;
+      } else { // there is space for complete new code in byte
+        bytesStream[numCount] = bytesStream[numCount] | newCode;
+        displace += codeSize;
+      }
+    }
+
+    ///////
+    addCode(CCindex, minimumCodeSize + 1);
+    while (streamStart <= indexStream.length) {
+      codeTableDict = JSON.parse(JSON.stringify(resetCodeTableData.codeTableDict));
+      let currentCodeSize = minimumCodeSize + 1;
+      let codeLengthCounter = EOIindex;
+  
+      let indexBuffer = indexStream[streamStart];
+      let i = streamStart + 1;
+      while (codeLengthCounter < Math.pow(2,12) && i < indexStream.length) {
+        const k = indexStream[i];
+        const combination = `${indexBuffer},${k}`;
+
+        if (codeTableDict[combination] !== undefined) {
+          indexBuffer = combination;
+        } else {
+          codeLengthCounter++;
+          if (codeLengthCounter >= Math.pow(2, currentCodeSize) + 1) currentCodeSize++;
+          const dictValue = codeTableDict[indexBuffer];
+          codeTableDict[combination] = codeLengthCounter;
+          addCode(dictValue, currentCodeSize);
+          indexBuffer = k;
+        }
+        i++;
+      }
+
+      addCode(codeTableDict[indexBuffer], currentCodeSize);
+      streamStart = i;
+      if (i >= indexStream.length) {
+        lastCodeSize = currentCodeSize;
+        break
+      }
+      addCode(CCindex, currentCodeSize);
+    }
+    addCode(EOIindex, lastCodeSize);
+    return bytesStream
+  }
+
+  getImageData(bytesStream) {
+    // une los bits que tienen largos variables en bytes
+    let bytes = [...bytesStream];
+
+    // bloques de máximo 255 bytes, antecedidos por el tamaño. Entonces total 256 bytes máx
+    const minimumCodeSize = Math.max(2, this.colorResolution + 1); // LZW minimum code size, esto va primero en el imageData
+    let imageData = [minimumCodeSize];
+    const maxBlockSize = 255;
+    for (let i = 0; i < Math.ceil(bytes.length / maxBlockSize); i++) {
+      let block = bytes.slice(i * maxBlockSize, (i + 1) * maxBlockSize);
+      block = [block.length, ...block];
+      imageData = [...imageData, ...block];
+      
+    }
+    imageData.push(0) // block terminator, esto muestra que terminó el imageData
+    return new Uint8Array(imageData)
+  }
+
+  download(buffer) {
+    const blob = new Blob([buffer]);
+    const fileName = `${this.fileName}.gif`;
+    if (navigator.msSaveBlob) {
+      navigator.msSaveBlob(blob, fileName);
+    } else {
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
+  }
+
+  structureGif() {
+    const packedField = parseInt(`1${this.toBin(this.colorResolution, 3)}0${this.toBin(this.colorResolution,3)}`, 2);
+    const header = concatArrayBuffers(...[
+      //header
+      rawString('GIF89a'),
+      // logical screen descriptor
+      U16LE(this.width),
+      U16LE(this.height),
+      U8(packedField),
+      U8(0),
+      U8(0)
+    ]);
+  
+    // global color table here
+
+    const loopRepetitions = 0; // 0 es infinito
+    const applicationExtension = concatArrayBuffers(...[
+      U8(33), // 33 (hex 0x21) GIF Extension code
+      U8(255), // 255 (hex 0xFF) Application Extension Label
+      U8(11), // 11 (hex 0x0B) Length of Application Block
+      rawString('NETSCAPE2.0'),
+      U8(3), // 3 (hex 0x03) Length of Data Sub-Block
+      U8(1), // 1 (hex 0x01)
+      U16LE(loopRepetitions),
+      U8(0) // terminator
+    ]);
+
+    // PARA CADA IMAGEN DE LA ANIMACIÓN HAY QUE HACER ESTAS TRES: graphicsColorExtension, imageDescriptor, imageData
+    const transparentFlag = this.transparent === true ? 1 : 0;
+    const disposal = 1; // forma en la que se dibujan las siguientes imágenes 1 es dibujar encima, 2 es borrar el canvas, 3 restore
+    const graphicsControlPackedField = parseInt(`00000${disposal}0${transparentFlag}`, 2);
+    const imageDescriptorPackedField = parseInt(`000000000`, 2);
+
+    const globalImageData = [];
+    for (let i = 0; i < this.framesImageData.length; i++) {
+
+      const graphicsControlExtension = concatArrayBuffers(...[
+        U8(33), // Extension introducer - always 21 hex
+        U8(249), // Graphic Control label - always f9 hex
+        U8(4), // Byte size
+        U8(graphicsControlPackedField),
+        U16LE(this.delay), // Delay time
+        U8(this.transparentIndex), // Transparent color index
+        U8(0) // Block terminator - always 0
+      ]);
+      globalImageData.push(graphicsControlExtension);
+      
+      const imageDescriptor = concatArrayBuffers(...[
+        U8(44), // Image Separator - always 2C hex
+        U16LE(0), // Image left,
+        U16LE(0), // ImageTop,
+        U16LE(this.width), // Width,
+        U16LE(this.height), // Height
+        U8(imageDescriptorPackedField),
+      ]);
+
+      globalImageData.push(imageDescriptor);
+
+      // image data here
+      globalImageData.push(this.framesImageData[i]);
+    }
+    
+    const trailer = new Uint8Array([59]) // 3b hex semicolon indicating end of file
+  
+    const gifFile = concatArrayBuffers(...[
+      header,
+      this.globalColorTable,
+      applicationExtension,
+      ...globalImageData,
+      trailer
+    ]);
+    
+    return gifFile
+
+    // ARRAYBUFFER HELPERS
+    function concatArrayBuffers(...bufs){
+      const result = new Uint8Array(bufs.reduce((totalSize, buf)=>totalSize+buf.byteLength,0));
+      bufs.reduce((offset, buf)=>{
+        result.set(buf,offset);
+        return offset+buf.byteLength
+      },0)
+      return result
+    }
+
+    function U16LE(v) {
+      const bytes = v.toString(2).padStart(16,'0');
+      const a = parseInt(bytes.slice(0, 8), 2);
+      const b = parseInt(bytes.slice(-8), 2);
+      return new Uint8Array([b, a]);
+    }
+
+    function U8(v) { return new Uint8Array([v]) }
+
+    function rawString(str) {
+      const buffer = new Uint8Array(str.length);
+      for (let i = 0; i < str.length; i++) {
+        buffer[i] = str.slice(i, i+1).charCodeAt(0);
+      }
+      return buffer
+    }
+  }
+
+  /// IMAGE MANIPULATION
+  maskLSB(pixels) {
+    // quita los least significant bits de la imagen
+    const mask = 0b11110000;
+    for (let i = 0; i < pixels.length; i++) {
+      if (i % 4 !== 3) {
+        pixels[i] = pixels[i] & mask;
+      }
+    }
+    return pixels
+  }
+
+  errorDiffusionDither(pixels, colors) { // FALTA REVISAR ESTO DE NUEVO, no funciona bien, pero hace severos glitches 
+    const errorDiff = [7/16,3/16,5/16];
+    const nIndexes = [[1,0],[-1, 1],[0, 1]];
+    const calculateError = (c1, c2) => c1.map((d, i) => d - c2[i]);
+
+    for (let index = 0; index < pixels.length; index += 4) {
+      const currentPixel = [pixels[index + 0], pixels[index + 1], pixels[index + 2], 255];        
+      const [closest] = this.findClosest(currentPixel, colors);
+      const error = calculateError(currentPixel, closest);
+
+      for (let i = 0; i < 3; i++) { pixels[index + i] = closest[i] }
+      
+      const x = Math.floor(index % this.width);
+      const y = Math.floor(index / this.width);
+      for (let j = 0; j < nIndexes.length; j++) {
+        const nh = (x + (nIndexes[j][0]) * 4) + ((y + (nIndexes[j][1]) * 4) * this.width);
+        for (let i = 0; i < 3; i++) {
+          pixels[nh + i] = pixels[nh + i] + (error[i] * errorDiff[i]);
+        }
+      }
+    }
+  
+    return pixels
+  }
+
+  simpleQuantize(pixels, colors) {
+    // returns image data object and index stream of colors in color table
+    const indexStream = [];
+    
+    for (let index = 0; index < pixels.length; index += 4) {
+      const currentPixel = [pixels[index + 0], pixels[index + 1], pixels[index + 2], 255];
+      const [closest, colorIndex] = this.findClosest(currentPixel, colors);
+      for (let i = 0; i < 3; i++) {pixels[index + i] = closest[i]}
+      indexStream.push(colorIndex);      
+    }
+
+    return [pixels, indexStream]
+  }
+
+  getIndexStream(pixels, colors) {
+    // pixels must be in rgba
+    const indexStream = [];
+    for (let i = 0; i < pixels.length; i += 4) {
+      const pixel = [];
+      for (let j = 0; j < 4; j++) { pixel.push(pixels[i + j]) }
+      const index = this.getIndex(pixel, colors);
+      indexStream.push(index);
+    }
+    return indexStream
+  }
+
+  findClosest(c, base) {
+    let index = 0;
+    let minDistance = Infinity;
+    for (let i = 0; i < base.length; i++) {
+      const distance = this.euclideanDistance(c, base[i]);
+      if (distance < minDistance) {
+        minDistance = distance;
+        index = i;
+      }
+    }
+    return [[...base[index], 255], index]
+  }
+  
+  euclideanDistance(c1, c2) {
+    const a = c1[0] - c2[0];
+    const b = c1[1] - c2[1];
+    const c = c1[2] - c2[2];
+    return ((a * a) + (b * b) + (c * c));
+  }
+
+  medianCutColors(pixels) {
+    const targetBins = this.colorTableSize;
+  
+    const cols = [[]];  
+    let counter = 0;
+    for (let i = 0; i < pixels.length; i++) { // crear el primer bin a partir de los pixels
+      if (i % 4 === 0) {
+        cols[counter][0] = pixels[i];
+      } else if (i % 4 === 1) {
+        cols[counter][1] = pixels[i];
+      } else if (i % 4 === 2) {
+        cols[counter][2] = pixels[i];
+      } else if (i % 4 === 3) {
+        counter++;
+        cols[counter] = [];
+      }
+    }
+    cols.pop(); //quitar el último objeto que se creó por el alpha sobrante
+  
+    // recursion
+    const bins = medianCutRecursion([cols], targetBins);
+    return averageBins(bins);
+  
+    function averageBins() {
+      const averages = [];
+      for (let bin of bins) {
+        const channels = {r:[], g:[], b:[]};
+        for (let ch of bin) {
+          channels.r.push(ch[0]);
+          channels.g.push(ch[1]);
+          channels.b.push(ch[2]);
+        }
+        const avg = [stats(channels.r).avg, stats(channels.g).avg, stats(channels.b).avg, 255];
+        averages.push(avg);
+      }
+      return averages
+    }
+  
+    function medianCutRecursion(bins, targetBins) {
+      if (bins.length >= targetBins) return bins
+  
+      let newBins = [];
+      for (let bin of bins) {
+        const channels = {r:[], g:[], b:[]};
+        for (let ch of bin) {
+          channels.r.push(ch[0]);
+          channels.g.push(ch[1]);
+          channels.b.push(ch[2]);
+        }
+        
+        const maxRangeI = stats([stats(channels.r).range, stats(channels.g).range, stats(channels.b).range]).maxI; // index of channel with maxrange
+        const sorted = bin.sort((a,b)=> a[maxRangeI] - b[maxRangeI]); // ascendente
+        newBins.push(
+          sorted.slice(0, Math.floor(sorted.length/2)), // primera mitad
+          sorted.slice(Math.floor(sorted.length/2)) // segunda mitad
+        )
+      }
+      return medianCutRecursion(newBins, targetBins);
+    }
+
+    function stats(arr) {
+      let max = -Number.MAX_VALUE, min = Number.MAX_VALUE;
+      let minI = 0, maxI = 0;
+      let sum = 0;
+      arr.forEach((e, i) => {
+        sum += e;
+        if (max < e) {
+          max = e;
+          maxI = i;
+        }
+        if (min > e) {
+          min = e;
+          minI = i;
+        }
+      })
+      return {min, max, minI, maxI, range: max-min, avg: Math.floor(sum/arr.length)}
+    }
+  }
+
+  // HELPERS
+  getIndex(r, table) {
+    let index = 0;
+    for (let i = 0; i < table.length; i++) {
+      const t = table[i];
+      let isCol = true;
+      for (let j = 0; j < r.length; j++) {
+        if (r[j] !== t[j]) isCol = false;
+      }
+      if (isCol) {
+        index = i;
+        break
+      }
+    }
+    return index
+  }
+
+  toBin(v, pad = 0) {return (v).toString(2).padStart(pad,'0')}
+}
