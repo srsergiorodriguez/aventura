@@ -5,26 +5,6 @@ Copyright (c) 2020 - 2022 Sergio Rodríguez Gómez // https://github.com/srsergi
 Released under MIT License
 */
 
-/*
-CHANGELOG
-historia interactiva
-- sceneCallback: devuelve la escena actual
-- setAreas: se pueden ajustar áreas con botones
-- las imágenes se precargan para que sea más fluida la interacción
-markov
-- corregido el error de separación de las cadenas de markov
-- guarda el número de ngramas en el nombre del filename del modelo markov
-- cargar modelo debe ser incluir la extension en el path
-- ahora se pueden hacer igramas con gifs pero mostrar igrama tiene este orden (resultado, formato, contenedor)
-- se pueden quitar elementos de las arrays sobre la marcha cuando se crean nuevas reglas (poniendo  un '-' antes del key)
-- opciones con o sin retroalimentación incluyendo texto
-- ntegrar igramas a historias interactivas
-
-POR HACER
-- Documentación de igramas y cadenas de markov
-- Documentación de áreas
-*/
-
 class Aventura {
   constructor(lang = 'en',options) {
     this.lang = (lang === 'en' || lang === 'es') ? lang : 'en';
