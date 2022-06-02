@@ -1,5 +1,5 @@
 /*
-Aventura v2.3.5
+Aventura v2.3.6
 A library for making biterature / Una librería para hacer biteratura
 Copyright (c) 2020 - 2022 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
 Released under MIT License
@@ -17,13 +17,12 @@ markov
 - cargar modelo debe ser incluir la extension en el path
 - ahora se pueden hacer igramas con gifs pero mostrar igrama tiene este orden (resultado, formato, contenedor)
 - se pueden quitar elementos de las arrays sobre la marcha cuando se crean nuevas reglas (poniendo  un '-' antes del key)
+- opciones con o sin retroalimentación incluyendo texto
+- ntegrar igramas a historias interactivas
 
 POR HACER
 - Documentación de igramas y cadenas de markov
 - Documentación de áreas
-
-- Poder hacer escenas con opciones que no tengan pantalla de retroalimentación !!!!!!
-- Integrar igramas a historias interactivas !!!!!!
 */
 
 class Aventura {
@@ -33,6 +32,7 @@ class Aventura {
       typewriterSpeed: 50,
       defaultCSS: true,
       adventureContainer: undefined,
+      igramaFormat: 'gif',
       sceneCallback: (s)=>{return s} // Returns the current scene
     }
     if (options) {this.options = Object.assign(this.options,options)}
@@ -221,16 +221,16 @@ class Aventura {
       const storyImageContainer = document.createElement("div");
       storyImageContainer.className = "storyimage-container";
 
-
-      // node.cloneNode(true);
       const src = scene.image || scene.imagen;
       const image = this.storyPreload[src];
-
 
       storyImageContainer.appendChild(image);
       storydiv.appendChild(storyImageContainer);
 
       if (scene.areas) { // clickable areas that take to scenes
+        window.onresize = () => {
+          this.goToScene(scene);
+        }
         if (image.complete) {
           this.setAreas(image, storyImageContainer, scene.areas);
         } else {
@@ -238,10 +238,21 @@ class Aventura {
             this.setAreas(image, storyImageContainer, scene.areas);
           };
         }
-        window.onresize = () => {
-          this.goToScene(scene);
-        }
       }
+    } else if (scene.igrama !== undefined) {
+      const storyImageContainer = document.createElement("div");
+      storyImageContainer.className = "storyimage-container";
+
+      const layers = this.expandIgrama('base');
+      this.igramaDataUrl(layers, this.options.igramaFormat).then(url => {
+        const image = new Image();
+        image.src = url
+        image.className = "storyimage";
+
+        storyImageContainer.appendChild(image);
+        storydiv.appendChild(storyImageContainer);
+        scene.igramaText = this.getIgramaText(layers);
+      });
     }
 
     // Create text paragraph
@@ -250,7 +261,7 @@ class Aventura {
     paragraph.innerHTML = "";
     storydiv.appendChild(paragraph);
 
-    this.typewriter(paragraph,scene);
+    this.typewriter(paragraph, scene);
     this.options.sceneCallback(scene);
   }
 
@@ -322,8 +333,14 @@ class Aventura {
         optionButton.className = "storybutton";
         optionButton.innerHTML = option.btn;
         storydiv.appendChild(optionButton);
-        optionButton.addEventListener("click",()=>{
-          this.goToScene(option);
+        optionButton.addEventListener("click",() => {
+          const includesText = option.text || option.texto;
+          if (includesText === undefined) {
+            const nextScene = options.scene || option.escena;
+            this.goToScene(this.scenes[nextScene]);
+          } else {
+            this.goToScene(option);
+          }
         });
       }
     } else if (scene.scene || scene.escena) {
