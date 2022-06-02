@@ -1,4 +1,15 @@
 #RELEASE NOTES:
+## 2.3.6
+- Added a sceneCallback functionality, which returns the actual scene being shown and can be used to add custom code to scenes
+- Added interactive areas overlay over images which can be used to make hiperlinks to scenes
+- Images preload at the beginning of the interactive story
+- Now if you don't include a 'text' attribute in an options object in a scene, the interface takes you directly to the new scene, otherwise, it creates a 'feedback' intermediate scene wich shows the text attribute
+- It is now possible to use igramas in scenes
+- Corrected an error in markov chains ngram separation
+- The filename of markov models now includes the n number of ngrams
+- **BREAKING CHANGE** loading models now must include the filename
+- showIgrama or mostrarIgrama function now integrates Minigif and can show gifs. The arguments are (result, format..'png' or 'gif', container)
+- It is now possible to delete elements from rule arrays in grammars by putting a '-' before the key. For example: `$newRule$[-key:ruleArray]`
 
 ## 2.2.0
 - Added markov chains functions
