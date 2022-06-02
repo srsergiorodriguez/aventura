@@ -6,7 +6,7 @@ Si ya conoces la librería, puedes pasar al [resúmen rápido](#resumen-rápido)
 Para leer la referencia en inglés... For a reference in English: [clic aquí / click here](/README.md).
 
 ## Acerca
-Esta es una librería que te permite crear texto de forma generativa usando [Gramática libre de contexto](https://es.wikipedia.org/wiki/Gram%C3%A1tica_libre_de_contexto) e [historias interactivas](https://es.wikipedia.org/wiki/Aventura_conversacional) similares a las aventuras basadas en texto clásicas (por ejemplo, el juego [Zork](https://es.wikipedia.org/wiki/Zork "Zork")). Aventura tiene el propósito de ser una librería de programación creativa para explorar la "biteratura" o los textos literarios generados por computador. Aunque es sencilla, con ella puedes crear textos o historias complejas que se dividen en múltiples posibilidades generativas.
+Esta es una librería que te permite crear texto de forma generativa usando [Gramática libre de contexto](https://es.wikipedia.org/wiki/Gram%C3%A1tica_libre_de_contexto) y [Cadenas de Markov](https://es.wikipedia.org/wiki/Cadena_de_M%C3%A1rkov) e [historias interactivas](https://es.wikipedia.org/wiki/Aventura_conversacional). Aventura tiene el propósito de ser una librería de programación creativa para explorar la "biteratura" o los textos literarios generados por computador. Aunque es sencilla, con ella puedes crear textos o historias complejas que se dividen en múltiples posibilidades generativas.
 
 ## Cómo usarla
 Solo descarga la [librería](./source/aventura.js) en la carpeta de tu proyecto, y luego añade una etiqueta de *script* a tu documento .html, así:
@@ -24,22 +24,29 @@ En tu código de Javascript, para empezar a usar la librería, crea una instanci
   - [Acerca](#acerca)
   - [Cómo usarla](#cómo-usarla)
     - [Índice](#índice)
-  - [Texto generativo con Gramática libre de contexto :monkey:](#texto-generativo-con-gramática-libre-de-contexto-monkey)
-    - [Lo básico](#lo-básico)
-    - [Corregir errores](#corregir-errores)
-    - [Texto generativo - opciones avanzadas](#texto-generativo---opciones-avanzadas)
-      - [Definir probabilidades en las opciones de una regla](#definir-probabilidades-en-las-opciones-de-una-regla)
-      - [Transformar el texto definido por una regla](#transformar-el-texto-definido-por-una-regla)
-      - [Crear nuevas reglas](#crear-nuevas-reglas)
+  - [Texto generativo](#texto-generativo)
+    - [Texto generativo con Gramática libre de contexto :monkey:](#texto-generativo-con-gramática-libre-de-contexto-monkey)
+      - [Lo básico](#lo-básico)
+      - [Corregir errores](#corregir-errores)
+      - [Opciones avanzadas](#opciones-avanzadas)
+        - [Definir probabilidades en las opciones de una regla](#definir-probabilidades-en-las-opciones-de-una-regla)
+        - [Transformar el texto definido por una regla](#transformar-el-texto-definido-por-una-regla)
+        - [Crear nuevas reglas](#crear-nuevas-reglas)
+    - [Texto generativo con Cadenas de Markov :floppy_disk:](#texto-generativo-con-cadenas-de-markov-floppy_disk)
+      - [Lo básico](#lo-básico-1)
+      - [Guardar el modelo](#guardar-el-modelo)
+      - [Analizar el modelo](#analizar-el-modelo)
   - [Historias interactivas basadas en texto :alien:](#historias-interactivas-basadas-en-texto-alien)
-    - [Lo básico](#lo-básico-1)
+    - [Lo básico](#lo-básico-2)
     - [Corregir errores](#corregir-errores-1)
     - [Historias interactivas - opciones avanzadas](#historias-interactivas---opciones-avanzadas)
       - [¡Añade imágenes!](#añade-imágenes)
       - [Usar texto generativo en las historias](#usar-texto-generativo-en-las-historias)
-      - [Configuración personalizada](#configuración-personalizada)
+  - [Configuración personalizada](#configuración-personalizada)
         - [Escoger un contenedor](#escoger-un-contenedor)
         - [Cambiar la velocidad de la máquina de escribir](#cambiar-la-velocidad-de-la-máquina-de-escribir)
+        - [Cambiar el formato del Igrama](#cambiar-el-formato-del-igrama)
+        - [Código personalizado en las escenas](#código-personalizado-en-las-escenas)
         - [Sobreescribir el estilo de la interfaz](#sobreescribir-el-estilo-de-la-interfaz)
   - [Resumen rápido](#resumen-rápido)
   - [Ejemplos](#ejemplos)
@@ -47,45 +54,48 @@ En tu código de Javascript, para empezar a usar la librería, crea una instanci
   - [Versión, licencia y copyright](#versión-licencia-y-copyright)
         - [Colaboradores](#colaboradores)
 
-## Texto generativo con Gramática libre de contexto :monkey:
+## Texto generativo 
 
-### Lo básico
+### Texto generativo con Gramática libre de contexto :monkey:
 
-Los textos generativos que puedes crear con Aventura se estructuran sobre la base de un sistema llamado *[Gramática libre de contexto](https://es.wikipedia.org/wiki/Gram%C3%A1tica_libre_de_contexto)*. En palabras menos extravagantes, puedes imaginar que el texto que vas a generar surge de un árbol en el que el texto final es el tronco, pero, para definir qué partes tendrá ese texto, debes pasar por distintas ramas recogiendo sus frutos (en este caso, los frutos son fracciones de texto). Por cada rama que pasas puedes escoger entre una serie de opciones de texto (de frutos), y una vez escogida, esa opción pasa al tronco como parte del texto final. De hecho, cada rama puede tener sus propias subramas, sus propios caminos por seguir, así que para saber qué pedazo de texto (o fruto) llegará al final, debes llegar al final de todas las ramas y sus subramas (y las subramas de las subramas, y así sucesivamente).
+#### Lo básico
 
-En Aventura, para representar el árbol de tu gramática en JavaScript debes declarar un *[objeto](https://developer.mozilla.org/es/docs/Learn/JavaScript/Objects/Basics)* que contiene una serie de *[arrays](https://developer.mozilla.org/es/docs/Web/JavaScript/Referencia/Objetos_globales/Array)* de *[strings](https://developer.mozilla.org/es/docs/Web/JavaScript/Referencia/Objetos_globales/String)*. Una de esas *arrays* es el tronco (la que tú escojas), y las demás representan ramas o subramas del árbol. Por conveniencia, a todas estas arrays las llamaremos 'reglas'. Cada regla es un listado de opciones de las que se escogerá una cuando el recorrido del árbol pase por la regla (¡incluyendo el tronco!), y dentro de cada una de las opciones puedes poner texto convencional o referencias a otras reglas que se deben seguir para terminar de completar el texto. Para referenciar otra regla debes usar una etiqueta con corchetes angulares: `<regla>`.
+Un tipo de texto generativo que puedes crear con Aventura se estructura sobre la base de un sistema llamado *[Gramática libre de contexto](https://es.wikipedia.org/wiki/Gram%C3%A1tica_libre_de_contexto)*. En palabras menos extravagantes, puedes imaginar que el texto que vas a generar está definido por una posible secuencia de pedacitos de texto unidos, y para obtener los pedacitos finales debes definir dos cosas diferentes: un orden en el que irán unidos y unas opciones de las cuales escoger los pedacitos. El orden y las opciones conforman lo que llamaremos una "gramática".
+Supongamos que queremos crear una frase simple que está compuesta de dos partes, un saludo y una despedida. Primero definimos un orden para las partes: primero va el saludo y luego va la despedida, y luego definimos unas opciones para esas partes: digamos que el saludo siempre será "Hola", pero que las despedidas pueden ser "hasta luego", "adiós", o "hasta nunca". Imagina que para generar el texto vamos pasando por cada parte en orden y, como si tuvieramos una bolsa llena de opciones, metemos la mano y sacamos una de las opciones disponibles para cada parte. 
 
-Así, un árbol o gramática muy simple, con solo un tronco y una rama, se vería así:
+Ahora que ya tenemos una gramática lo que sigue es escribirla en código para que Aventura pueda generar textos. En Aventura, para representar tu gramática en JavaScript debes declarar un *[objeto](https://developer.mozilla.org/es/docs/Learn/JavaScript/Objects/Basics)* que contiene una serie de *[arrays](https://developer.mozilla.org/es/docs/Web/JavaScript/Referencia/Objetos_globales/Array)* de *[strings](https://developer.mozilla.org/es/docs/Web/JavaScript/Referencia/Objetos_globales/String)*. Una de esas *arrays* es la base (la que tú escojas) que contiene el orden inicial y las demás representan opciones. Por conveniencia, a todas estas arrays las llamaremos 'reglas'. Para darle la indicación a aventura de que busque en las opciones de otra regla debes usar una etiqueta con corchetes angulares: `<regla>`.
+
+Así, una gramática muy simple, se vería así:
 
 ```Javascript
-const arbol = {
-    tronco: ["Hola y <rama>"],
-    rama: ["hasta luego", "adiós", "hasta nunca"]
+const gramatica = {
+    base: ["Hola y <despedida>"],
+    despedida: ["hasta luego", "adiós", "hasta nunca"]
 };
 ```
 
-Los posibles resultados de un texto generado con esta gramática son: "Hola y hasta luego", "Hola y adiós" y "Hola y hasta nunca". La opción que completará el texto desde la rama se escogerá al azar, y todas las opciones tienen la misma probabilidad de aparecer en el texto final. Si quieres influir más en esas probabilidades, revisa las [opciones avanzadas](#texto-generativo---opciones-avanzadas). Puedes incluir tantas opciones como quieras, incluso solo una, como pasa con el tronco en el ejemplo.
+Los posibles resultados de un texto generado con esta gramática son: "Hola y hasta luego", "Hola y adiós" y "Hola y hasta nunca". La opción que completará el texto desde la regla "despedida" se escogerá al azar, y todas las opciones tienen la misma probabilidad de aparecer en el texto final. Si quieres influir más en esas probabilidades, revisa las [opciones avanzadas](#texto-generativo---opciones-avanzadas). Puedes incluir tantas opciones como quieras, incluso solo una, como pasa con el tronco en el ejemplo.
 
-:exclamation: nota que para nombrar al árbol y a sus partes no puedes usar tildes ni espacios, pero el texto que está dentro de las reglas puede tener tildes sin problemas.
+:exclamation: observa que para nombrar a las reglas no puedes usar tildes ni espacios, pero el texto que está dentro de las reglas puede tener tildes sin problemas.
 
 ¡Prueba los resultados! luego de que crear la gramática, tienes que pasarla como un argumento a tu instancia de Aventura usando la función **'fijarGramatica'**:
 
-`aventura.fijarGramatica(arbol);`
+`aventura.fijarGramatica(gramatica);`
 
-Y para obtener un texto generado debes usar la función **'expandirGramatica'**, pasando como argumento el nombre del tronco (que en este caso es 'tronco').
+Y para obtener un texto generado debes usar la función **'expandirGramatica'**, pasando como argumento el nombre de la regla inicial (que en este caso es 'base').
 
-`const textoGenerado = aventura.expandirGramatica('tronco');`
+`const textoGenerado = aventura.expandirGramatica('base');`
 
 O, convenientemente, puedes encadenar las funciones de pasar la gramática y luego expandirla, así tienes todo en una sola línea:
 
-`const textoGenerado = aventura.fijarGramatica(arbol).expandirGramatica('tronco');`
+`const textoGenerado = aventura.fijarGramatica(gramatica).expandirGramatica('base');`
 
-Ese que vimos es un generador muy simple, pero puede ser más complejo. Ahora incluyamos más ramas, e incluso subramas:
+Ese que vimos es un generador muy simple, pero puede ser más complejo. Ahora incluyamos más reglas, e incluso subreglas:
 
 ```Javascript
 const gramatica = {
     frase: ["Una <animal> <cualidad>"],
-    animal: ["gata","jirafa","ardilla"],
+    animal: ["gata", "jirafa", "ardilla"],
     cualidad: ["<color> <adjetivo>"],
     color: ["verde", "azul", "roja"],
     adjetivo: ["fuerte", "inteligente", "valiente"]
@@ -96,11 +106,11 @@ console.log(textoGenerado);
 // Un resultado posible sería: "Una jirafa roja valiente"
 ```
 
-Nota que aquí una rama (cualidad) está referenciando a dos subramas (color y adjetivo), así que hay que recorrerlas también para obtener el resultado final.
+Observa que aquí una regla (cualidad) está referenciando a dos subreglas (color y adjetivo), así que hay que recorrerlas también para obtener el resultado final. Es como una gramatica metida dentro de otra gramática.
 
 Intenta crear reglas más complejas. ¡Tu imaginación es el límite! ...y el poder del computador, por supuesto. Procura no crear reglas que se referencian circularmente, porque puedes crear un [loop infinito](https://es.wikipedia.org/wiki/Bucle_infinito).
 
-### Corregir errores
+#### Corregir errores
 
 Puede que, si creas una gramática compleja, al generar un texto nuevo veas que el programa no funciona. Esto probablemente se deba a que hay una referencia a una regla que no existe. No desesperes, es difícil llevar la cuenta de todas las ramas una vez el árbol se hace más y más grande. Para solucionarlo, Aventura te mostrará el origen de tu error en la consola con un mensaje como este:
 
@@ -118,8 +128,8 @@ Así, Aventura te mostrará en la consola el origen de todos los errores en gram
 
 `Las siguientes reglas, que se referencian en "cualidad", no existen: clr`
 
-### Texto generativo - opciones avanzadas
-#### Definir probabilidades en las opciones de una regla
+#### Opciones avanzadas
+##### Definir probabilidades en las opciones de una regla
 Si quieres que alguna opción en una regla tenga más probabilidades de aparecer cuando se expande el texto final puedes crear una nueva propiedad llamada 'prob' en la *array* que representa la regla. Idealmente, cada opción debe tener un valor de probabilidad entre 0 y 1, y la suma de todos los valores deberá ser igual a 1:
 
 ```Javascript
@@ -131,7 +141,7 @@ gramatica.colores.prob = [0.1, 0.2, 0.1, 0.6];
 
 En el ejemplo anterior, "púrpura" tendrá más probabilidad de aparecer que las demás opciones.
 
-#### Transformar el texto definido por una regla
+##### Transformar el texto definido por una regla
 Puedes aplicar ciertas transformaciones al texto que se expande desde alguna regla. Por ejemplo, puedes poner en mayúsculas la primera letra de la cadena de texto o puedes poner en mayúsculas todas sus letras. Si es el caso, las tranformaciones se deben indicar dentro de un par de numerales '#' luego del nombre de una regla referenciada. Si quieres poner varias transformaciones, sepáralas con comas:
 
 ```Javascript
@@ -147,7 +157,7 @@ En el momento, las tranformaciones posibles son:
 * Primera letra en mayúscula: CAPITALIZE
 * Todas las letras en mayúscula: ALLCAPS
 
-#### Crear nuevas reglas
+##### Crear nuevas reglas
 Puedes crear nuevas reglas mientras tu gramática se expande. Esto es útil para fijar reglas que quieres producir generativamente pero que además usarás recurrentemente en tu nuevo texto. Por ejemplo, piensa en un personaje que aparece varias veces en una historia; quieres que su nombre se decida a partir de una lista de opciones, pero también quieres que, una vez se haya elegido al comienzo de la historia, se siga usando consistentemente en el resto de la historia. Las reglas nuevas se crean definiendo un nuevo nombre para la regla (encerrado en `$`), seguido de un set de subreglas, encerradas en paréntesis cuadrados: `[clave1:valor1,clave2,valor2...]`. Cada subregla debe especificarse en pares de clave-valor, y el conjunto de subreglas deben separarse por comas:
 
 ```Javascript
@@ -159,6 +169,69 @@ const gramatica = {
 const textoGenerado = aventura.fijarGramatica(gramatica).expandirGramatica('frase');
 // Un resultado posible puede ser: "Esta es la historia de una gata. Debes saber que la gata fue muy valiente"
 ```
+
+Adicionalmente, si quieres que deje de estar disponible una opción una vez se elige puedes poner un signo "menos" antes de la clave `-clave:valor`. Esto lo eliminará de la array. Esta funcionalidad es útil, por ejemplo, si quieres elegir un nombre de personaje y no quieres que se use en otras partes que también aprovechen la misma lista de opciones.
+
+### Texto generativo con Cadenas de Markov :floppy_disk:
+
+#### Lo básico
+
+Otro tipo de texto generativo que puedes crear con Aventura se estructura sobre la base de un sistema llamado *[Cadenas de Markov](https://es.wikipedia.org/wiki/Cadena_de_M%C3%A1rkov)*. En palabras menos rimbombantes, imagina que lees un texto completo y vas anotando qué probabilidad hay de que una palabra siga a otra. Por ejemplo, lees el texto "Un gato es un animal noble. Un gato es nobleza" y descubres que las probabilidades de las palabras que pueden seguir después de "Un" son estas: "gato" 67% de probabilidad aprox. (porque aparece dos veces), "animal" 33% de probabilidad aprox. (porque aparece una vez). Luego, teniendo las probabilidades de cada palabra, puedes escoger una semilla, es decir una primera palabra, y escoger palabras posibles que siguen a esa semilla, y así sucesivamente vas generando una cadena de palabras. Por eso, justamente, se llama una Cadenda de 
+Markov.
+
+Para lograr esto en Aventura primero debes generar un modelo de Markov que contenga las probabilidades usando la función `modeloMarkov`, pasando el archivo de texto que quieres analizar:
+
+```JavaScript
+  aventura.modeloMarkov("textoBase.txt")
+```
+
+Este análisis un poco de tiempo, no mucho. Así que la función devuelve una promesa. Luego, el modelo que devuelve la promesa lo puedes fijar a Aventura con la función `fijarMarkov`  y, una vez fijado, lo puedes usar para generar textos con la función `cadenaMarkov`. En `cadenaMarkov` debes pasar como argumentos el número de palabras que quieres generar y la semilla de la que parte la cadena:
+
+```JavaScript
+aventura.modeloMarkov("textoBase.txt").then(modelo => {
+  const textoGenerado = aventura.fijarMarkov(modelo).cadenaMarkov(100, 'semilla');
+  console.log(textoGenerado);
+});
+```
+
+Es así de simple.
+
+Sin embargo, aquí cabe añadir que, de hecho, un modelo de Markov puede generarse no solo con una palabra sino con una secuencia de palabras. Es lo que en teoría llaman un n-grama. Por ejemplo: 'gato' o 'el' son unigramas, mientras que 'el gato' o 'gato negro' son bigramas. La n en n-grama es el número de palabras que se usan para generar el modelo. Entonces, en Aventura podemos generar un modelo con diferentes n-gramas pasando n como segundo argumento en `modeloMarkov`. Dicho esto, es importante que la semilla sea también un n-grama del mismo tamaño que se definió para el modelo:
+
+```JavaScript
+aventura.modeloMarkov("textoBase.txt", 2).then(modelo => {
+  const textoGenerado = aventura.fijarMarkov(modelo).cadenaMarkov(100, 'semilla viva');
+  console.log(textoGenerado);
+});
+```
+
+Cuando Aventura no encuentra la semilla en el modelo, simplemente escoge una semilla válida al azar.
+
+#### Guardar el modelo
+
+Si pasas como tercer argumento de `modeloMarkov` el booleano `true`, entonces Aventura guardará el modelo en un archivo .json. Ese modelo puedes usarlo después usando la función `cargarJSON` de Aventura:
+
+```JavaScript
+aventura.cargarJSON("./modeloMarkov.json").then(modelo => {
+  const textoGenerado = aventura.fijarMarkov(modelo).cadenaMarkov(100, 'semilla viva');
+  console.log(textoGenerado);
+});
+```
+
+#### Analizar el modelo
+
+Una opción adicional que ofrece este sistema consiste en hacer una visualización muy simple de la distribución de probabilidades en la consola con la función encadenable `modeloMarkov`:
+
+```JavaScript
+aventura.cargarJSON("./modeloMarkov.json").then(modelo => {
+  const textoGenerado = aventura.fijarMarkov(modelo)
+    .probarDistribucion() // Probar la distribución con esta función
+    .cadenaMarkov(100, 'semilla viva');
+  console.log(textoGenerado);
+});
+```
+
+Así se puede tener una idea muy general de la variedad del texto original. Si la mayoría de la distribución está en el número 1 eso quiere decir que el texto no es muy diverso, y por lo tanto el texto generado será muy parecido al original. Por el contrario, si la distribución es mayor por los números cercanos al 0 entonces el texto original es más diverso y por lo tanto el texto generado también lo será.
 
 ## Historias interactivas basadas en texto :alien:
 
@@ -199,7 +272,7 @@ O, convenientemente, puedes encadenar las dos funciones en una sola línea:
 
 `aventura.fijarEscenas(escenas).iniciarAventura('inicio');`
 
-El otro tipo de escena es una **escena con opciones**. Aquí, igual que con la escena simple, debes especificar un texto, pero también debes definir una lista de opciones. La lista debe contener objetos con el texto de los botones que explican las decisiones, un texto que se presentará luego de tomar la decisión, y la escena a la que llevará haber tomado la decisión:
+El otro tipo de escena es una **escena con opciones**. Aquí, igual que con la escena simple, debes especificar un texto, pero también debes definir una lista de opciones. La lista debe contener objetos con el texto de los botones que explican las decisiones, opcionalmente un texto que se presentará luego de tomar la decisión, y la escena a la que llevará haber tomado la decisión:
 
 ```Javascript
 const escenas = {
@@ -208,7 +281,7 @@ const escenas = {
     opciones: [
       {
         btn: "dejar tranquilo",
-        texto: "dejas al círculo en paz",
+        texto: "dejas al círculo en paz", // esto es opcional, si se pone, la interfaz mostrará una escena intermedia con este texto
         escena: "final1"
       },
       {
@@ -342,14 +415,16 @@ Una historia increíble`,
 aventura.fijarGramatica(gramatica).fijarEscenas(escenas).iniciarAventura('portada');
 ```
 
-#### Configuración personalizada
+## Configuración personalizada
 Puedes cambiar algunas opciones si pasas un objeto de configuración cuando creas una nueva instancia de Aventura:
 
 ```Javascript
 const config = {
       typewriterSpeed: 50,
       defaultCSS: true,
-      adventureContainer: undefined
+      adventureContainer: undefined,
+      igramaFormat: 'png',
+      sceneCallback: (s) => { return s }
     }
 const aventura = new Aventura('es',config);
 ```
@@ -361,6 +436,12 @@ Puedes ubicar tu historia en el lugar que quieras en tu proyecto si defines un e
 ##### Cambiar la velocidad de la máquina de escribir
 Para cambiar la velocidad del efecto de máquina de escribir pon como parámetro de **typewriterSpeed** en el objeto de configuración el valor que quieras. El valor por defecto es 50, es decir, una nueva letra cada 50 milisegundos.
 Si el valor de **typewriterSpeed** es 0, se desactiva el efecto y el texto aparece de inmediato.
+
+##### Cambiar el formato del Igrama
+Para cancelar el formato por defecto del igrama, pasa `png` o `gif` en el parámetro **igramaFormat**. El formato por defecto es .png.
+
+##### Código personalizado en las escenas
+Puedes ejecutar código personalizado en las escenas con el parámetro **igramaFormat** que define un callback que se ejecuta cada vez que se cambia de escena en la historia interactiva. Este callback devuelve la escena que se está presentando.
 
 ##### Sobreescribir el estilo de la interfaz
 Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetro **defaultCSS**. Puedes personalizar el estilo como quieras. Como referencia, este es el estilo por defecto de la interfaz:
@@ -461,9 +542,9 @@ General:
   
 ---
 
-Texto generativo:
+Texto generativo con Gramáticas Libres de Contexto:
 
-* Pasar gramática: `fijarGramática(gramatica);`
+* Fijar gramática: `fijarGramática(gramatica);`
 * Evaluar estructura de la gramática: `probarGramatica(?gramatica);`
 * Expandir gramática: `expandirGramática(raiz);`
 
@@ -472,6 +553,16 @@ Texto generativo:
 * Referencia a regla: `<regla>`
 * Referencia con transformación: `<regla#TRANSFORMACIÓN#>`
 * Nueva regla: `$nombre$[clave:subregla]`
+
+---
+
+Texto generativo con Cadenas de Markov:
+
+* Generar modelo: `cargarJSON(camino);` Devuelve promesa
+* Cargar modelo: `cargarJSON(camino, ?n, ?guardarModelo);` Devuelve promesa 
+* Fijar modelo: `fijarMarkov(modelo);` 
+* Probar distribución: `probarDistribucion();` 
+* Generar Texto: `cadenaMarkov(n, semilla);`
 
 ---
 
@@ -492,9 +583,10 @@ Historia interactiva:
   opciones: [
     {
       btn,
-      texto,
+      ?texto,
       escena,
-      ?imagen
+      ?imagen,
+      ?igrama
     }
     ?...
   ]
@@ -519,7 +611,7 @@ Algunas implementaciones que quisiera añadir en el futuro son:
 * Crear una interfaz gráfica para diseñar las gramáticas y las historias de forma no líneal (como un árbol) que sea utilizable y exportable
 
 ## Versión, licencia y copyright
-v2.3.1
+v2.3.6
 
 (c) Sergio Rodríguez Gómez @srsergiorodriguez
 
