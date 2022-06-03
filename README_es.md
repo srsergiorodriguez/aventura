@@ -32,12 +32,14 @@ En tu código de Javascript, para empezar a usar la librería, crea una instanci
         - [Definir probabilidades en las opciones de una regla](#definir-probabilidades-en-las-opciones-de-una-regla)
         - [Transformar el texto definido por una regla](#transformar-el-texto-definido-por-una-regla)
         - [Crear nuevas reglas](#crear-nuevas-reglas)
-    - [Texto generativo con Cadenas de Markov :floppy_disk:](#texto-generativo-con-cadenas-de-markov-floppy_disk)
+    - [Imágenes generativas - igramas](#imágenes-generativas---igramas)
       - [Lo básico](#lo-básico-1)
+    - [Texto generativo con Cadenas de Markov :floppy_disk:](#texto-generativo-con-cadenas-de-markov-floppy_disk)
+      - [Lo básico](#lo-básico-2)
       - [Guardar el modelo](#guardar-el-modelo)
       - [Analizar el modelo](#analizar-el-modelo)
   - [Historias interactivas basadas en texto :alien:](#historias-interactivas-basadas-en-texto-alien)
-    - [Lo básico](#lo-básico-2)
+    - [Lo básico](#lo-básico-3)
     - [Corregir errores](#corregir-errores-1)
     - [Historias interactivas - opciones avanzadas](#historias-interactivas---opciones-avanzadas)
       - [¡Añade imágenes!](#añade-imágenes)
@@ -171,6 +173,26 @@ const textoGenerado = aventura.fijarGramatica(gramatica).expandirGramatica('fras
 ```
 
 Adicionalmente, si quieres que deje de estar disponible una opción una vez se elige puedes poner un signo "menos" antes de la clave `-clave:valor`. Esto lo eliminará de la array. Esta funcionalidad es útil, por ejemplo, si quieres elegir un nombre de personaje y no quieres que se use en otras partes que también aprovechen la misma lista de opciones.
+
+### Imágenes generativas - igramas
+
+#### Lo básico
+Hay un tipo especial de generador de imágenes, que aquí llamaremos un "igrama", que se puede crear con Aventura usando como base el generador de gramáticas libres de contexto. Los igramas funcionan casi igual que los generadores convencionales solo que, en vez de juntar fragmentos de texto, juntan fragmentos de imágenes. Así, también es necesario definir una gramática que tenga un orden y una serie de opciones.
+
+Para crear una gramática de igrama puedes usar la aplicación de igramas en [este sitio web](https://srsergiorodriguez.github.io/igrama) que provee la interfaz necesaria para definir la gramática especial que requiere un generador de imágenes. Esa interfaz te permite descargar la gramática en formato .json para luego cargarla a tu programa que usa Aventura. Las funciones para generar el igrama son muy similares a las del generador convencional: primero se fija el modelo con `fijarIgrama` pasando el modelo, luego se pueden expandir las capas del dibujo con `expandirIgrama` pasando la regla inicial, y para mostrar el dibujo se usa `mostrarIgrama` pasando las capas y, opcionalmente, un formato de imagen ("png" o "gif") y el id de un div contenedor. Para generar los gifs se usa la librería [MiniGif](https://github.com/srsergiorodriguez/minigif)
+Adicionalmente se puede expandir un texto si se definieron atributos en la aplicación de igrama con la función `textoIgrama` pasando las capas:
+
+```Javascript
+aventura.cargarJSON("./igrama.json").then(gramatica => {
+  aventura.fijarIgrama(gramatica);
+  const capas = aventura.expandirIgrama('base');
+  aventura.mostrarIgrama(capas, 'png', 'contenedor-igrama');
+  const texto = aventura.textoIgrama(capas);
+  console.log(texto);
+});
+```
+
+También puedes obtener la URL de la imagen generada con el igrama usando la función `igramaDataUrl` pasando las capas y el formato.
 
 ### Texto generativo con Cadenas de Markov :floppy_disk:
 
@@ -354,6 +376,15 @@ const escenas = {
     sinSalida: true
   }
 }
+```
+
+Puedes además usar imágenes generativas si pasas una gramática de igrama a Aventura con `fijarIgrama` y en las escenas usas el atributo "igrama" en vez de imagen y defines la regla de base:
+
+```Javascript
+  escena: {
+    texto: "Hola",
+    igrama: "base"
+  }
 ```
 
 #### Usar texto generativo en las historias
@@ -546,13 +577,23 @@ Texto generativo con Gramáticas Libres de Contexto:
 
 * Fijar gramática: `fijarGramática(gramatica);`
 * Evaluar estructura de la gramática: `probarGramatica(?gramatica);`
-* Expandir gramática: `expandirGramática(raiz);`
+* Expandir gramática: `expandirGramática(regla);`
 
 ---
 
 * Referencia a regla: `<regla>`
 * Referencia con transformación: `<regla#TRANSFORMACIÓN#>`
 * Nueva regla: `$nombre$[clave:subregla]`
+
+---
+
+Imágenes generativas Igramas:
+
+* Fijar igrama: `fijarIgrama(gramatica);`
+* Expandir igrama: `expandirIgrama(regla);` Devuelve capas
+* Mostrar imagen: `mostrarIgrama(capas, formato, contenedor)` Formato puede ser 'png' o 'gif'
+* Texto de atributos: `textoIgrama(capas);`
+* Url imagen: `igramaDataUrl(capas, formato)`;
 
 ---
 
