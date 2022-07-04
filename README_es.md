@@ -42,6 +42,7 @@ En tu código de Javascript, para empezar a usar la librería, crea una instanci
     - [Lo básico](#lo-básico-3)
     - [Corregir errores](#corregir-errores-1)
     - [Historias interactivas - opciones avanzadas](#historias-interactivas---opciones-avanzadas)
+      - [Usa áreas de las imágenes además de botones](#usa-áreas-de-las-imágenes-además-de-botones)
       - [¡Añade imágenes!](#añade-imágenes)
       - [Usar texto generativo en las historias](#usar-texto-generativo-en-las-historias)
   - [Configuración personalizada](#configuración-personalizada)
@@ -342,6 +343,24 @@ Esto quiere decir que hay que revisar si está mal escrito el nombre de la escen
 
 ### Historias interactivas - opciones avanzadas
 
+#### Usa áreas de las imágenes además de botones
+Puedes usar areas cliqueables dentro de las imágenes de las escenas de tu historia que llevan a nuevas escenas. Para hacerlo, debes crear una array de `areas` en los parámetros de una escena con los siguientes parámetros para cada área:
+
+```Javascript
+// ... dentro de una escena
+ areas: [
+  {
+    x: 500, // Posición en px en el eje X con respecto a la imagen original
+    y: 200, // Posición en px en el eje Y con respecto a la imagen original
+    w: 50, // Ancho del área en px
+    h: 50, // Alto del área en px
+    btn: "¡Hacia adelante!", // Texto contenido dentro del área
+    escena: "1", // Escena a la que lleva al hacer clic
+    tooltip: "Cliquea" // Texto opcional que se presental al pasar el mouse por encima del área
+  }//, y así sucesivamente con otras areas dentro de la misma escena
+ ]
+```
+
 #### ¡Añade imágenes!
 :surfer: También puedes añadir imágenes a tus escenas definiendo el parámetro 'imagen' para establecer el *path* o camino de una imagen en la carpeta de tu proyecto, tanto en tus escenas como en los subobjetos de decisión:
 
@@ -484,49 +503,62 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
   box-sizing: border-box;
   margin: auto;
   max-width: 600px;
+  font-family: 'Courier New', Courier, monospace;
 }
 
 /* Contenedor de la historia */
 
-#storydiv {
-  box-sizing: border-box;
+.storydiv {
   border: solid black 1px;
+  width: 100%;
+  display: flex;
+  padding: 10px;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* Párrafo de texto */
 
 .storyp {
-  box-sizing: border-box;
-  min-height: 40px;
   font-size: 18px;
-  padding: 0px 10px;
-  font-family: 'Courier New', Courier, monospace;
+  min-height: 25px;
 }
 
 /* Botón de opciones */
 
+.storybutton-container {
+  margin: auto;
+}
+
 .storybutton {
-  padding: 3px;
   background: white;
   box-shadow: none;
   border: solid 1px;
   margin: 0px 1em 0px 0px;
   font-size: 20px;
   font-family: 'Courier New', Courier, monospace;
+  cursor: pointer;
 }
+
 .storybutton:hover {
   color: white;
   background: black;
 }
 
 /* Imagen */
+.storyimage-container {
+  box-sizing: content-box;
+  position: relative;
+  width: 100%;
+  margin: auto;
+}
 
 .storyimage {
-  max-width: 100%;
-  max-height: 70vh;
+  justify-content: center;
+  width: 100%;
+  margin: auto;
+  border-radius: 20px;
   display: block;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 /* Área clickeable en la imagen */
@@ -535,14 +567,16 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
   position: absolute;
   cursor: pointer;
   text-align: center;
-  color: red;
-  background: black;
-  border-radius: 100px;
+  color: black;
+  background: white;
+  border-radius: 4px;
+  padding: 10px;
+  border: solid 1px black;
 }
 
 .storyimage-area:hover {
-  background: white;
-  color: black;
+  background: black;
+  color: white;
 }
 
 /* Configuración para dispositivos pequeños */
@@ -551,14 +585,10 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
   #storygeneraldiv {
     max-width:100%;
   }
-  .storyimage {
-    max-width: 100%;
-  }
   .storyp {
     font-size: 7vw;
   }
   .storybutton {
-    background: white;
     font-size: 10vw;
   }
 }
@@ -571,6 +601,21 @@ General:
 
 * Crear instancia: `const aventura = new Aventura(?idioma, ?configuracion);`
   
+---
+
+* Opciones: 
+
+```JavaScript
+  opciones = {
+    typewriterSpeed: 50, // Velocidad de la máquina de escribir
+    defaultCSS: true, // Usar CSS por defecto
+    adventureContainer: undefined, // Contenedor de historia interactiva (body por defecto)
+    igramaFormat: 'png', // Formato de igrama en historia interactiva ('png', por defecto, o 'gif')
+    adventureScroll: true, // Despejar o no las escenas anteriores de la historia en curso
+    sceneCallback: (escena)=>{} // Callback cada vez que se cambia de escena
+  }
+```
+
 ---
 
 Texto generativo con Gramáticas Libres de Contexto:

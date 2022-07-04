@@ -1,5 +1,5 @@
 /*
-Aventura v2.3.6
+Aventura v2.4.0b
 A library for making biterature / Una librería para hacer biteratura
 Copyright (c) 2020 - 2022 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
 Released under MIT License
@@ -12,7 +12,8 @@ class Aventura {
       typewriterSpeed: 50,
       defaultCSS: true,
       adventureContainer: undefined,
-      igramaFormat: 'gif',
+      igramaFormat: 'png',
+      adventureScroll: false,
       sceneCallback: (s)=>{return s} // Returns the current scene
     }
     if (options) {this.options = Object.assign(this.options,options)}
@@ -62,6 +63,7 @@ class Aventura {
 
   setScenes(scenes) {
     this.scenes = scenes;
+
     for (let key of Object.keys(scenes)) {
       this.scenes[key].key = key;
 
@@ -176,7 +178,7 @@ class Aventura {
     // Create the div that will contain the adventure
     const generaldiv = document.createElement("div");
     generaldiv.id = "storygeneraldiv";
-    const parent = this.options.adventureContainer?document.getElementById(this.options.adventureContainer):document.body;
+    const parent = this.options.adventureContainer !== undefined ? document.getElementById(this.options.adventureContainer) : document.body;
     parent.appendChild(generaldiv);
 
     // Start the interactice story display
@@ -185,15 +187,19 @@ class Aventura {
   }
 
   goToScene(scene) {
-    // Delete previous div containing story display
     const generaldiv = document.getElementById("storygeneraldiv");
-    const prevdiv = document.getElementById("storydiv");
-    if (prevdiv) {generaldiv.removeChild(prevdiv)};
 
-    // de pronto on window resize redibujar scene
+    if (!this.options.adventureScroll) {
+      // Delete previous div containing story display
+      const prevstorydivs = [...document.getElementsByClassName("storydiv")];
+      prevstorydivs.map(e => e.remove());
+    }
 
+    const prevareas = [...document.getElementsByClassName("storyimage-area")];
+    prevareas.map(e => e.remove());
+    
     const storydiv = document.createElement("div");
-    storydiv.id = "storydiv";
+    storydiv.className = "storydiv";
     generaldiv.appendChild(storydiv);
 
     // Create image (if there's a path available)
@@ -208,9 +214,6 @@ class Aventura {
       storydiv.appendChild(storyImageContainer);
 
       if (scene.areas) { // clickable areas that take to scenes
-        window.onresize = () => {
-          this.goToScene(scene);
-        }
         if (image.complete) {
           this.setAreas(image, storyImageContainer, scene.areas);
         } else {
@@ -236,10 +239,20 @@ class Aventura {
     }
 
     // Create text paragraph
+    const paragraph_container = document.createElement("div");
+    paragraph_container.className = "storyp-container";
+    storydiv.appendChild(paragraph_container);
+
     const paragraph = document.createElement("p");
     paragraph.className = "storyp";
     paragraph.innerHTML = "";
-    storydiv.appendChild(paragraph);
+    paragraph_container.appendChild(paragraph);
+
+    const storydivs = [...document.getElementsByClassName("storydiv")];
+    storydivs[storydivs.length - 1].scrollIntoView({ behavior: 'smooth', block: 'end'});
+
+    const prevbuttons = [...document.getElementsByClassName("storybutton-container")];
+    prevbuttons.map(e => e.remove());
 
     this.typewriter(paragraph, scene);
     this.options.sceneCallback(scene);
@@ -250,6 +263,16 @@ class Aventura {
     // Adapts according to responsive changes in image size
     const dims = imgSource.getBoundingClientRect();
     const dimsC = parent.getBoundingClientRect();
+
+    window.onresize = () => {
+      if (document.getElementsByClassName("storyimage-area").length > 0) {
+        this.setAreas(imgSource, parent, areas);
+      }
+    }
+
+    const prevareas = [...document.getElementsByClassName("storyimage-area")];
+    prevareas.map(e => e.remove());
+
     for (let a of areas) {
       let area = document.createElement("div");
       area.className = "storyimage-area";
@@ -257,12 +280,12 @@ class Aventura {
       area.style.left = `${dims.left - dimsC.left + left}px`;
       const top = ((a.y-(Math.floor(a.h/2))) * dims.height)/imgSource.naturalHeight;
       area.style.top = `${dims.top - dimsC.top + top}px`;
-      area.style.minWidth = `${a.w*dims.width/imgSource.naturalWidth}px`;
-      area.style.minHeight = `${a.h*dims.height/imgSource.naturalHeight}px`;
-      area.innerHTML = a.text || a.texto;
+      area.style.width = `${a.w*dims.width/imgSource.naturalWidth}px`;
+      area.style.height = `${a.h*dims.height/imgSource.naturalHeight}px`;
+      area.innerHTML = a.btn || '';
       parent.appendChild(area);
 
-      area.style.fontSize = `${40*dims.height/imgSource.naturalHeight}px`;
+      area.style.fontSize = `${18*dims.height/imgSource.naturalHeight}px`;
       area.onclick = () => {
         const e = a.scene || a.escena;
         this.goToScene(this.scenes[e]);
@@ -270,11 +293,11 @@ class Aventura {
 
       if (a.tooltip !== undefined) {
         area.onmouseover = () => {
-          area.innerHTML = a.tooltip || a.tooltip
+          area.innerHTML = a.tooltip || '';
           area.style.zIndex =  '100';
         }
         area.onmouseout = () => {
-          area.innerHTML = a.text || a.texto;
+          area.innerHTML = a.btn || '';
           area.style.zIndex =  '0';
         }
       }
@@ -283,7 +306,7 @@ class Aventura {
 
   typewriter(paragraph,scene) {
     // Writes the text in a typewriter effect, and once it finishes, shows buttons
-    const textContent = scene.text || scene.texto;
+    const textContent = scene.text || scene.texto || '';
     let text = this.grammar ? this.grammarRuleRecursion(textContent) : textContent;
     text = text.replace(/\n/g,'<br>');
     if (this.options.typewriterSpeed > 0) {
@@ -296,7 +319,7 @@ class Aventura {
           clearInterval(interval);
           this.optionButtons(scene);
         }
-      },Math.floor(this.options.typewriterSpeed));
+      }, Math.floor(this.options.typewriterSpeed));
     } else {
       paragraph.innerHTML = text;
       this.optionButtons(scene);
@@ -304,7 +327,13 @@ class Aventura {
   }
 
   optionButtons(scene) {
-    const storydiv = document.getElementById("storydiv");
+    const storydivs = [...document.getElementsByClassName("storydiv")];
+    const storydiv = storydivs[storydivs.length - 1];
+
+    const btns_container = document.createElement("div");
+    btns_container.className = "storybutton-container";
+    storydiv.appendChild(btns_container);
+
     if (scene.options || scene.opciones) {
       const options = scene.options || scene.opciones;
       // Create multiple buttons for choosing a new scene path
@@ -312,7 +341,7 @@ class Aventura {
         const optionButton = document.createElement("button");
         optionButton.className = "storybutton";
         optionButton.innerHTML = option.btn;
-        storydiv.appendChild(optionButton);
+        btns_container.appendChild(optionButton);
         optionButton.addEventListener("click",() => {
           const includesText = option.text || option.texto;
           if (includesText === undefined) {
@@ -329,11 +358,13 @@ class Aventura {
       const continueButton = document.createElement("button");
       continueButton.className = "storybutton";
       continueButton.innerHTML = this.lang === 'en' ? "Continue" : "Continuar";
-      storydiv.appendChild(continueButton);
+      btns_container.appendChild(continueButton);
       continueButton.addEventListener("click",()=>{
         this.goToScene(this.scenes[nextScene]);
       });
     }
+
+    storydiv.scrollIntoView({ behavior: 'smooth', block: 'end'});
   }
 
   // GRAMMAR UTILITIES
@@ -804,24 +835,35 @@ const defaultStyling =
   max-width: 600px;
   font-family: 'Courier New', Courier, monospace;
 }
-#storydiv {
+
+.storydiv {
   border: solid black 1px;
   width: 100%;
+  display: flex;
+  padding: 10px;
+  flex-direction: column;
+  box-sizing: border-box;
 }
+
 .storyp {
-  min-height: 40px;
-  padding: 0px 10px;
   font-size: 18px;
+  min-height: 25px;
 }
+
+.storybutton-container {
+  margin: auto;
+}
+
 .storybutton {
-  padding: 3px;
   background: white;
   box-shadow: none;
   border: solid 1px;
   margin: 0px 1em 0px 0px;
   font-size: 20px;
   font-family: 'Courier New', Courier, monospace;
+  cursor: pointer;
 }
+
 .storybutton:hover {
   color: white;
   background: black;
@@ -830,17 +872,13 @@ const defaultStyling =
 .storyimage-container {
   box-sizing: content-box;
   position: relative;
-  padding: 10px;
-  max-width: 100%;
-  max-height: 70vh;
+  width: 100%;
   margin: auto;
-  display: flex;
 }
 
 .storyimage {
   justify-content: center;
-  max-width: 100%;
-  max-height: 70vh;
+  width: 100%;
   margin: auto;
   border-radius: 20px;
   display: block;
@@ -850,22 +888,21 @@ const defaultStyling =
   position: absolute;
   cursor: pointer;
   text-align: center;
-  color: red;
-  background: black;
-  border-radius: 100px;
+  color: black;
+  background: white;
+  border-radius: 4px;
+  padding: 10px;
+  border: solid 1px black;
 }
 
 .storyimage-area:hover {
-  background: white;
-  color: black;
+  background: black;
+  color: white;
 }
 
 @media screen and (max-device-width: 500px) {
   #storygeneraldiv {
     max-width:100%;
-  }
-  .storyimage {
-    max-width: 100%;
   }
   .storyp {
     font-size: 7vw;
