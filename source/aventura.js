@@ -181,7 +181,7 @@ class Aventura {
     const parent = this.options.adventureContainer !== undefined ? document.getElementById(this.options.adventureContainer) : document.body;
     parent.appendChild(generaldiv);
 
-    // Start the interactice story display
+    // Start the interactive story display
     this.goToScene(this.scenes[start]);
     return this
   }
@@ -189,7 +189,7 @@ class Aventura {
   goToScene(scene) {
     const generaldiv = document.getElementById("storygeneraldiv");
 
-    if (!this.options.adventureScroll) {
+    if (!this.options.adventureScroll || scene.plop === true) {
       // Delete previous div containing story display
       const prevstorydivs = [...document.getElementsByClassName("storydiv")];
       prevstorydivs.map(e => e.remove());
@@ -208,7 +208,7 @@ class Aventura {
       storyImageContainer.className = "storyimage-container";
 
       const src = scene.image || scene.imagen;
-      const image = this.storyPreload[src];
+      const image = !this.options.adventureScroll ? this.storyPreload[src] : this.storyPreload[src].cloneNode();
 
       storyImageContainer.appendChild(image);
       storydiv.appendChild(storyImageContainer);
@@ -241,20 +241,20 @@ class Aventura {
     // Create text paragraph
     const paragraph_container = document.createElement("div");
     paragraph_container.className = "storyp-container";
-    storydiv.appendChild(paragraph_container);
+    if (scene.text || scene.texto) {
+      storydiv.appendChild(paragraph_container);
+    }
 
     const paragraph = document.createElement("p");
     paragraph.className = "storyp";
     paragraph.innerHTML = "";
     paragraph_container.appendChild(paragraph);
 
-    const storydivs = [...document.getElementsByClassName("storydiv")];
-    storydivs[storydivs.length - 1].scrollIntoView({ behavior: 'smooth', block: 'end'});
-
-    const prevbuttons = [...document.getElementsByClassName("storybutton-container")];
-    prevbuttons.map(e => e.remove());
-
+    // Scroll to end of storydiv
+    document.getElementById("storygeneraldiv").scrollIntoView({ behavior: 'smooth', block: 'end'});
+    
     this.typewriter(paragraph, scene);
+
     this.options.sceneCallback(scene);
   }
 
@@ -330,6 +330,9 @@ class Aventura {
     const storydivs = [...document.getElementsByClassName("storydiv")];
     const storydiv = storydivs[storydivs.length - 1];
 
+    const prevbuttons = [...document.getElementsByClassName("storybutton-container")];
+    prevbuttons.map(e => e.remove());
+
     const btns_container = document.createElement("div");
     btns_container.className = "storybutton-container";
     storydiv.appendChild(btns_container);
@@ -364,7 +367,7 @@ class Aventura {
       });
     }
 
-    storydiv.scrollIntoView({ behavior: 'smooth', block: 'end'});
+    document.getElementById("storygeneraldiv").scrollIntoView({ behavior: 'smooth', block: 'end'});
   }
 
   // GRAMMAR UTILITIES
@@ -708,9 +711,9 @@ class Aventura {
 
   async base64_arraybuffer(data) {
     const base64url = await new Promise((r) => {
-      const reader = new FileReader()
-      reader.onload = () => r(reader.result)
-      reader.readAsDataURL(new Blob([data]))
+      const reader = new FileReader();
+      reader.onload = () => r(reader.result);
+      reader.readAsDataURL(new Blob([data]));
     })
     return base64url.split(",", 2)[1]
   }
@@ -834,6 +837,7 @@ const defaultStyling =
   margin: auto;
   max-width: 600px;
   font-family: 'Courier New', Courier, monospace;
+  background: white;
 }
 
 .storydiv {
