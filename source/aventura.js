@@ -715,7 +715,7 @@ class Aventura {
       reader.onload = () => r(reader.result);
       reader.readAsDataURL(new Blob([data]));
     })
-    return base64url.split(",", 2)[1]
+    return base64url.split(",", 2)[1];
   }
 
   getLayerWiggle(layers) {
