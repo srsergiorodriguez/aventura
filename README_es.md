@@ -46,11 +46,11 @@ En tu código de Javascript, para empezar a usar la librería, crea una instanci
       - [¡Añade imágenes!](#añade-imágenes)
       - [Usar texto generativo en las historias](#usar-texto-generativo-en-las-historias)
   - [Configuración personalizada](#configuración-personalizada)
-        - [Escoger un contenedor](#escoger-un-contenedor)
-        - [Cambiar la velocidad de la máquina de escribir](#cambiar-la-velocidad-de-la-máquina-de-escribir)
-        - [Cambiar el formato del Igrama](#cambiar-el-formato-del-igrama)
-        - [Código personalizado en las escenas](#código-personalizado-en-las-escenas)
-        - [Sobreescribir el estilo de la interfaz](#sobreescribir-el-estilo-de-la-interfaz)
+    - [Escoger un contenedor](#escoger-un-contenedor)
+    - [Cambiar la velocidad de la máquina de escribir](#cambiar-la-velocidad-de-la-máquina-de-escribir)
+    - [Cambiar el formato del Igrama](#cambiar-el-formato-del-igrama)
+    - [Código personalizado en las escenas](#código-personalizado-en-las-escenas)
+    - [Sobreescribir el estilo de la interfaz](#sobreescribir-el-estilo-de-la-interfaz)
   - [Resumen rápido](#resumen-rápido)
   - [Ejemplos](#ejemplos)
   - [Ayuda a mejorar esta librería](#ayuda-a-mejorar-esta-librería)
@@ -180,7 +180,7 @@ Adicionalmente, si quieres que deje de estar disponible una opción una vez se e
 #### Lo básico
 Hay un tipo especial de generador de imágenes, que aquí llamaremos un "igrama", que se puede crear con Aventura usando como base el generador de gramáticas libres de contexto. Los igramas funcionan casi igual que los generadores convencionales solo que, en vez de juntar fragmentos de texto, juntan fragmentos de imágenes. Así, también es necesario definir una gramática que tenga un orden y una serie de opciones.
 
-Para crear una gramática de igrama puedes usar la aplicación de igramas en [este sitio web](https://srsergiorodriguez.github.io/igrama) que provee la interfaz necesaria para definir la gramática especial que requiere un generador de imágenes. Esa interfaz te permite descargar la gramática en formato .json para luego cargarla a tu programa que usa Aventura. Las funciones para generar el igrama son muy similares a las del generador convencional: primero se fija el modelo con `fijarIgrama` pasando el modelo, luego se pueden expandir las capas del dibujo con `expandirIgrama` pasando la regla inicial, y para mostrar el dibujo se usa `mostrarIgrama` pasando las capas y, opcionalmente, un formato de imagen ("png" o "gif") y el id de un div contenedor. Para generar los gifs se usa la librería [MiniGif](https://github.com/srsergiorodriguez/minigif)
+Para crear una gramática de igrama puedes usar la aplicación de igramas en [este sitio web](https://srsergiorodriguez.github.io/igrama) que provee la interfaz necesaria para definir la gramática especial que requiere un generador de imágenes. Esa interfaz te permite descargar la gramática en formato .json para luego cargarla a tu programa que usa Aventura. Las funciones para generar el igrama son muy similares a las del generador convencional: primero se fija el modelo con `fijarIgrama` pasando el modelo, luego se pueden expandir las capas del dibujo con `expandirIgrama` pasando la regla inicial, y para mostrar el dibujo se usa `mostrarIgrama` pasando las capas y, opcionalmente, un formato de imagen ("png" o "gif") y el id de un div contenedor. Para generar los gifs se usa la librería [MiniGif](https://github.com/srsergiorodriguez/minigif), así que si quieres usar esa funcionalidad debes también incluirla en tu documento.
 Adicionalmente se puede expandir un texto si se definieron atributos en la aplicación de igrama con la función `textoIgrama` pasando las capas:
 
 ```Javascript
@@ -480,20 +480,20 @@ const aventura = new Aventura('es',config);
 ```
 Las opciones son:
 
-##### Escoger un contenedor
+### Escoger un contenedor
 Puedes ubicar tu historia en el lugar que quieras en tu proyecto si defines un elemento html contenedor para la interfaz. Para eso, pon el nombre del *id* contenedor en el parámetro **adventureContainer**.
 
-##### Cambiar la velocidad de la máquina de escribir
+### Cambiar la velocidad de la máquina de escribir
 Para cambiar la velocidad del efecto de máquina de escribir pon como parámetro de **typewriterSpeed** en el objeto de configuración el valor que quieras. El valor por defecto es 50, es decir, una nueva letra cada 50 milisegundos.
 Si el valor de **typewriterSpeed** es 0, se desactiva el efecto y el texto aparece de inmediato.
 
-##### Cambiar el formato del Igrama
+### Cambiar el formato del Igrama
 Para cancelar el formato por defecto del igrama, pasa `png` o `gif` en el parámetro **igramaFormat**. El formato por defecto es .png.
 
-##### Código personalizado en las escenas
+### Código personalizado en las escenas
 Puedes ejecutar código personalizado en las escenas con el parámetro **igramaFormat** que define un callback que se ejecuta cada vez que se cambia de escena en la historia interactiva. Este callback devuelve la escena que se está presentando.
 
-##### Sobreescribir el estilo de la interfaz
+### Sobreescribir el estilo de la interfaz
 Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetro **defaultCSS**. Puedes personalizar el estilo como quieras. Como referencia, este es el estilo por defecto de la interfaz:
 
 ```CSS
@@ -504,6 +504,7 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
   margin: auto;
   max-width: 600px;
   font-family: 'Courier New', Courier, monospace;
+  background: white;
 }
 
 /* Contenedor de la historia */
