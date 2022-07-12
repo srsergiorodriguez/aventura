@@ -12,8 +12,9 @@ class Aventura {
       typewriterSpeed: 50,
       defaultCSS: true,
       adventureContainer: undefined,
-      igramaFormat: 'png',
       adventureScroll: false,
+      igramaFormat: 'png',
+      minigifOptions: {},
       sceneCallback: (s)=>{return s} // Returns the current scene
     }
     if (options) {this.options = Object.assign(this.options,options)}
@@ -396,7 +397,8 @@ class Aventura {
   defineTransformations(rule) {
     // Define which transformations must be applied to the string
     let transformations = {};
-    const transformationList = /#(?<trans>[\w\d,]+)#/gi.exec(rule)?.groups.trans.match(/[\w]+/gi)||[];
+    const trans = /#(?<trans>[\w\d,]+)#/gi.exec(rule);
+    const transformationList = trans ? trans.groups.trans.match(/[\w]+/gi) : [];
     for (let t of transformationList) {transformations[t] = true}
     return transformations;
   }
@@ -604,10 +606,12 @@ class Aventura {
     for (let e of Object.keys(testGrammar)) {
       const rules = testGrammar[e];
       for (let rule of rules) {
-        const references = rule.match(/<([\w\d]+)>/gi)?.map(d=>d.replace(/[<>]/g,""))||[];
-        const newRules = rule.match(/\$[\w\d]+\$\[([\w\d.,:]+)\]/gi)?.map(d=>{
+        const refsMatch = rule.match(/<([\w\d]+)>/gi);
+        const references = refsMatch ? refsMatch.map(d=>d.replace(/[<>]/g,"")) : [];
+        const newRulesMatch = rule.match(/\$[\w\d]+\$\[([\w\d.,:]+)\]/gi)
+        const newRules = newRulesMatch ? newRulesMatch.map(d=>{
           return d.match(/([ ]?:[\w\d]+)/g).map(x=>/[ ]?:(?<key>[\w\d]+)/.exec(x).groups.key);
-        }).reduce((a,c)=>[...a,...c],[])||[];
+        }).reduce((a,c)=>[...a,...c],[]) : [];
         const deadEnds = [...references,...newRules].filter(d=>!testGrammar[d]);
         if (deadEnds.length>0) {
           const errorMsg = this.lang === 'es'?
@@ -696,6 +700,7 @@ class Aventura {
         dither: false,
         delay: 50,
       }
+      Object.assign(options, this.minigifOptions);
       const gif = new MiniGif(options);
       gif.addFrame(canvas);
       const layerWiggle = this.getLayerWiggle(layers);

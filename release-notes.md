@@ -8,6 +8,7 @@
 - Changed the parameter to set inner text from `text` of area to `btn` to be consistent with the conventions of buttons
 - Improved CSS styling of interactive stories
 - MiniGif must be loaded separately
+- Added the parameter `minigifOptions` in the options of Aventura
 
 ## 2.3.6
 - Added a sceneCallback functionality, which returns the actual scene being shown and can be used to add custom code to scenes

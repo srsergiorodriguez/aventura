@@ -490,6 +490,9 @@ Si el valor de **typewriterSpeed** es 0, se desactiva el efecto y el texto apare
 ### Cambiar el formato del Igrama
 Para cancelar el formato por defecto del igrama, pasa `png` o `gif` en el parámetro **igramaFormat**. El formato por defecto es .png.
 
+### Cambiar opciones de MiniGif
+Cuando generas gifs con el igrama debes tener también en tu documento la libería [MiniGif](https://github.com/srsergiorodriguez/minigif). Puedes pasar opciones personalizadas a MiniGif desde Aventura usando el parametro **minigifOptions**.
+
 ### Código personalizado en las escenas
 Puedes ejecutar código personalizado en las escenas con el parámetro **igramaFormat** que define un callback que se ejecuta cada vez que se cambia de escena en la historia interactiva. Este callback devuelve la escena que se está presentando.
 
