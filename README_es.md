@@ -49,13 +49,14 @@ En tu código de Javascript, para empezar a usar la librería, crea una instanci
     - [Escoger un contenedor](#escoger-un-contenedor)
     - [Cambiar la velocidad de la máquina de escribir](#cambiar-la-velocidad-de-la-máquina-de-escribir)
     - [Cambiar el formato del Igrama](#cambiar-el-formato-del-igrama)
+    - [Cambiar opciones de MiniGif](#cambiar-opciones-de-minigif)
+    - [Scrolling](#scrolling)
     - [Código personalizado en las escenas](#código-personalizado-en-las-escenas)
     - [Sobreescribir el estilo de la interfaz](#sobreescribir-el-estilo-de-la-interfaz)
   - [Resumen rápido](#resumen-rápido)
   - [Ejemplos](#ejemplos)
   - [Ayuda a mejorar esta librería](#ayuda-a-mejorar-esta-librería)
   - [Versión, licencia y copyright](#versión-licencia-y-copyright)
-        - [Colaboradores](#colaboradores)
 
 ## Texto generativo 
 
@@ -199,16 +200,16 @@ También puedes obtener la URL de la imagen generada con el igrama usando la fun
 
 #### Lo básico
 
-Otro tipo de texto generativo que puedes crear con Aventura se estructura sobre la base de un sistema llamado *[Cadenas de Markov](https://es.wikipedia.org/wiki/Cadena_de_M%C3%A1rkov)*. En palabras menos rimbombantes, imagina que lees un texto completo y vas anotando qué probabilidad hay de que una palabra siga a otra. Por ejemplo, lees el texto "Un gato es un animal noble. Un gato es nobleza" y descubres que las probabilidades de las palabras que pueden seguir después de "Un" son estas: "gato" 67% de probabilidad aprox. (porque aparece dos veces), "animal" 33% de probabilidad aprox. (porque aparece una vez). Luego, teniendo las probabilidades de cada palabra, puedes escoger una semilla, es decir una primera palabra, y escoger palabras posibles que siguen a esa semilla, y así sucesivamente vas generando una cadena de palabras. Por eso, justamente, se llama una Cadenda de 
+Otro tipo de texto generativo que puedes crear con Aventura se estructura sobre la base de un sistema llamado *[Cadenas de Markov](https://es.wikipedia.org/wiki/Cadena_de_M%C3%A1rkov)*. En palabras menos rimbombantes, imagina que lees un texto completo y vas anotando qué probabilidad hay de que una palabra siga a otra. Por ejemplo, lees el texto "Un gato es un animal noble. Un gato es nobleza" y descubres que las probabilidades de las palabras que pueden seguir después de "Un" son estas: "gato" 67% de probabilidad aprox. (porque aparece dos veces), "animal" 33% de probabilidad aprox. (porque aparece una vez). Luego, teniendo las probabilidades de cada palabra, puedes escoger una semilla, es decir una primera palabra, y escoger palabras posibles que siguen a esa semilla, y así sucesivamente vas generando una cadena de palabras. Por eso, justamente, se llama una Cadena de 
 Markov.
 
 Para lograr esto en Aventura primero debes generar un modelo de Markov que contenga las probabilidades usando la función `modeloMarkov`, pasando el archivo de texto que quieres analizar:
 
 ```JavaScript
-  aventura.modeloMarkov("textoBase.txt")
+  aventura.modeloMarkov("textoBase.txt");
 ```
 
-Este análisis un poco de tiempo, no mucho. Así que la función devuelve una promesa. Luego, el modelo que devuelve la promesa lo puedes fijar a Aventura con la función `fijarMarkov`  y, una vez fijado, lo puedes usar para generar textos con la función `cadenaMarkov`. En `cadenaMarkov` debes pasar como argumentos el número de palabras que quieres generar y la semilla de la que parte la cadena:
+Este análisis un poco de tiempo, no mucho. Así que la función devuelve una promesa. Luego, el modelo que devuelve la promesa lo puedes fijar a Aventura con la función `fijarMarkov` y, una vez fijado, lo puedes usar para generar textos con la función `cadenaMarkov`. En `cadenaMarkov` debes pasar como argumentos el número de palabras que quieres generar y la semilla de la que parte la cadena:
 
 ```JavaScript
 aventura.modeloMarkov("textoBase.txt").then(modelo => {
@@ -219,7 +220,7 @@ aventura.modeloMarkov("textoBase.txt").then(modelo => {
 
 Es así de simple.
 
-Sin embargo, aquí cabe añadir que, de hecho, un modelo de Markov puede generarse no solo con una palabra sino con una secuencia de palabras. Es lo que en teoría llaman un n-grama. Por ejemplo: 'gato' o 'el' son unigramas, mientras que 'el gato' o 'gato negro' son bigramas. La n en n-grama es el número de palabras que se usan para generar el modelo. Entonces, en Aventura podemos generar un modelo con diferentes n-gramas pasando n como segundo argumento en `modeloMarkov`. Dicho esto, es importante que la semilla sea también un n-grama del mismo tamaño que se definió para el modelo:
+Sin embargo, aquí cabe añadir que, de hecho, un modelo de Markov puede generarse no solo con una palabra sino con una secuencia de palabras. Es lo que en teoría llaman un "n-grama". Por ejemplo: 'gato' o 'el' son unigramas, mientras que 'el gato' o 'gato negro' son bigramas. La n en n-grama es el número de palabras que se usan para generar el modelo. Entonces, en Aventura podemos generar un modelo con diferentes n-gramas pasando n como segundo argumento en `modeloMarkov`. Dicho esto, es importante que la semilla sea también un n-grama del mismo tamaño que se definió para el modelo:
 
 ```JavaScript
 aventura.modeloMarkov("textoBase.txt", 2).then(modelo => {
@@ -243,7 +244,7 @@ aventura.cargarJSON("./modeloMarkov.json").then(modelo => {
 
 #### Analizar el modelo
 
-Una opción adicional que ofrece este sistema consiste en hacer una visualización muy simple de la distribución de probabilidades en la consola con la función encadenable `modeloMarkov`:
+Una opción adicional que ofrece este sistema consiste en hacer una visualización muy simple de la distribución de probabilidades en la consola con la función encadenable `probarDistribucion`:
 
 ```JavaScript
 aventura.cargarJSON("./modeloMarkov.json").then(modelo => {
@@ -344,7 +345,7 @@ Esto quiere decir que hay que revisar si está mal escrito el nombre de la escen
 ### Historias interactivas - opciones avanzadas
 
 #### Usa áreas de las imágenes además de botones
-Puedes usar areas cliqueables dentro de las imágenes de las escenas de tu historia que llevan a nuevas escenas. Para hacerlo, debes crear una array de `areas` en los parámetros de una escena con los siguientes parámetros para cada área:
+Puedes usar areas cliqueables dentro de las imágenes de las escenas de tu historia que llevan a nuevas escenas. Para hacerlo, debes crear una array de `areas` en una escena con los siguientes parámetros para cada área:
 
 ```Javascript
 // ... dentro de una escena
@@ -354,7 +355,7 @@ Puedes usar areas cliqueables dentro de las imágenes de las escenas de tu histo
     y: 200, // Posición en px en el eje Y con respecto a la imagen original
     w: 50, // Ancho del área en px
     h: 50, // Alto del área en px
-    btn: "¡Hacia adelante!", // Texto contenido dentro del área
+    btn: "¡Hacia adelante!", // Texto contenido dentro del área (puedes dejar una string vacía)
     escena: "1", // Escena a la que lleva al hacer clic
     tooltip: "Cliquea" // Texto opcional que se presental al pasar el mouse por encima del área
   }//, y así sucesivamente con otras areas dentro de la misma escena
@@ -397,7 +398,7 @@ const escenas = {
 }
 ```
 
-Puedes además usar imágenes generativas si pasas una gramática de igrama a Aventura con `fijarIgrama` y en las escenas usas el atributo "igrama" en vez de imagen y defines la regla de base:
+Puedes además usar imágenes generativas si pasas una gramática de igrama a Aventura con `fijarIgrama` y en las escenas usas el atributo "igrama", en vez de imagen, y defines la regla de base:
 
 ```Javascript
   escena: {
@@ -419,9 +420,7 @@ const gramatica = {
 
 const escenas = {
   portada: {
-    texto: 
-    `$ardilla$[atributo:atributos]LA ARDILLA <ardilla.atributo#ALLCAPS#>
-Una historia increíble`,
+    texto: "$ardilla$[atributo:atributos]LA ARDILLA <ardilla.atributo#ALLCAPS#>, una historia increíble",
     escena: 'introduccion'
   },
   introduccion: {
@@ -429,8 +428,7 @@ Una historia increíble`,
     escena: 'inicio'
   },
   inicio: {
-    texto:
-    `La ardilla tenía un pelaje bonito de color...`,
+    texto: "La ardilla tenía un pelaje bonito de color...",
     opciones: [
       {
         btn:"Verde",
@@ -474,6 +472,7 @@ const config = {
       defaultCSS: true,
       adventureContainer: undefined,
       igramaFormat: 'png',
+      adventureScroll: false,
       sceneCallback: (s) => { return s }
     }
 const aventura = new Aventura('es',config);
@@ -488,10 +487,13 @@ Para cambiar la velocidad del efecto de máquina de escribir pon como parámetro
 Si el valor de **typewriterSpeed** es 0, se desactiva el efecto y el texto aparece de inmediato.
 
 ### Cambiar el formato del Igrama
-Para cancelar el formato por defecto del igrama, pasa `png` o `gif` en el parámetro **igramaFormat**. El formato por defecto es .png.
+Para cambiar el formato por defecto del igrama, pon "png" o "gif" en el parámetro **igramaFormat**. El formato por defecto es .png.
 
 ### Cambiar opciones de MiniGif
 Cuando generas gifs con el igrama debes tener también en tu documento la libería [MiniGif](https://github.com/srsergiorodriguez/minigif). Puedes pasar opciones personalizadas a MiniGif desde Aventura usando el parametro **minigifOptions**.
+
+### Scrolling
+Puedes mostrar las escenas escogidas sucesivamente en formato vertical, en vez de reemplazar la escena anterior con una nueva escena una vez se escogió un nuevo camino si dejas el parámetro **adventureScroll** en `true`. Esta opción es útil, por ejemplo, para crear web cómics interactivos.
 
 ### Código personalizado en las escenas
 Puedes ejecutar código personalizado en las escenas con el parámetro **igramaFormat** que define un callback que se ejecuta cada vez que se cambia de escena en la historia interactiva. Este callback devuelve la escena que se está presentando.
@@ -648,11 +650,11 @@ Imágenes generativas Igramas:
 
 Texto generativo con Cadenas de Markov:
 
-* Generar modelo: `cargarJSON(camino);` Devuelve promesa
+* Generar modelo: `modeloMarkov(camino);` Devuelve promesa
 * Cargar modelo: `cargarJSON(camino, ?n, ?guardarModelo);` Devuelve promesa 
 * Fijar modelo: `fijarMarkov(modelo);` 
 * Probar distribución: `probarDistribucion();` 
-* Generar Texto: `cadenaMarkov(n, semilla);`
+* Generar texto: `cadenaMarkov(n, semilla);`
 
 ---
 
@@ -670,6 +672,9 @@ Historia interactiva:
 {
   texto,
   ?imagen,
+  ?igrama,
+  ?sinSalida,
+  ?plop, // booleano, se usa para resetear la pantalla si se usa el modo scroll
   opciones: [
     {
       btn,
@@ -677,6 +682,19 @@ Historia interactiva:
       escena,
       ?imagen,
       ?igrama
+    }
+    ?...
+  ],
+  ?areas: [
+    {
+      x,
+      y,
+      w,
+      h,
+      btn,
+      ?texto,
+      escena,
+      tooltip
     }
     ?...
   ]
@@ -701,13 +719,10 @@ Algunas implementaciones que quisiera añadir en el futuro son:
 * Crear una interfaz gráfica para diseñar las gramáticas y las historias de forma no líneal (como un árbol) que sea utilizable y exportable
 
 ## Versión, licencia y copyright
-v2.3.6
+v2.4.1
 
 (c) Sergio Rodríguez Gómez @srsergiorodriguez
 
 Esta librería está amparada bajo una [licencia MIT](./LICENSE)
 
 2022
-
-##### Colaboradores
-@perropulgoso

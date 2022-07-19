@@ -1,6 +1,6 @@
 #RELEASE NOTES:
 
-## 2.4.0
+## 2.4.1
 - Added divs to different parts of the interactive story: image or igrama is contained in `storyimage-container`, paragraph is contained in `storyp-container`, and buttons are contained in `storybutton-container`
 - Added a scrolling option, useful for web comics or for stories that require keeping the previously visited scenes. Activate it by setting to true the parameter `adventureScroll` in the Aventura options. (Additionally, it clones the img nodes when this option is activated so the image does not get moved from one scene to another when the same scene is repeated)
 - Added the `plop` parameter in scenes. When true, the scrolling is reset and display of previous scenes is removed.
@@ -9,6 +9,7 @@
 - Improved CSS styling of interactive stories
 - MiniGif must be loaded separately
 - Added the parameter `minigifOptions` in the options of Aventura
+- Updated documentation!
 
 ## 2.3.6
 - Added a sceneCallback functionality, which returns the actual scene being shown and can be used to add custom code to scenes

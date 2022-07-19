@@ -1,5 +1,5 @@
 /*
-Aventura v2.4.0b
+Aventura v2.4.1
 A library for making biterature / Una librería para hacer biteratura
 Copyright (c) 2020 - 2022 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
 Released under MIT License
