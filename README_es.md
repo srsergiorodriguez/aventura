@@ -721,8 +721,10 @@ Algunas implementaciones que quisiera añadir en el futuro son:
 ## Versión, licencia y copyright
 v2.4.1
 
-(c) Sergio Rodríguez Gómez @srsergiorodriguez
+Por Sergio Rodríguez Gómez @srsergiorodriguez
 
 Esta librería está amparada bajo una [licencia MIT](./LICENSE)
+
+<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Licencia Creative Commons" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a><br />Esta documentación está bajo una <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Licencia Creative Commons Atribución-NoComercial-CompartirIgual 4.0 Internacional</a>.
 
 2022
