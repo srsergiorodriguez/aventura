@@ -716,8 +716,10 @@ This library aims to be bilingual (Spanish-English), so it takes more time to im
 ## Version, license, copyright
 v2.4.1
 
-(c) Sergio Rodríguez Gómez @srsergiorodriguez
+By Sergio Rodríguez Gómez @srsergiorodriguez
 
 [MIT LICENSE](./LICENSE)
+
+<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Licencia Creative Commons" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a><br />Esta documentación está bajo una <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Licencia Creative Commons Atribución-NoComercial-CompartirIgual 4.0 Internacional</a>.
 
 2022
