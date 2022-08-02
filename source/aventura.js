@@ -347,7 +347,7 @@ class Aventura {
         optionButton.addEventListener("click",() => {
           const includesText = option.text || option.texto;
           if (includesText === undefined) {
-            const nextScene = options.scene || option.escena;
+            const nextScene = option.scene || option.escena;
             this.goToScene(this.scenes[nextScene]);
           } else {
             this.goToScene(option);
