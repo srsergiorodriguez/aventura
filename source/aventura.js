@@ -900,15 +900,13 @@ const defaultStyling =
   cursor: pointer;
   text-align: center;
   color: black;
-  background: white;
-  border-radius: 4px;
+  background: #ffffff00;
   padding: 10px;
   border: solid 1px black;
 }
 
 .storyimage-area:hover {
-  background: black;
-  color: white;
+  background: #ffffff33;
 }
 
 @media screen and (max-device-width: 500px) {
