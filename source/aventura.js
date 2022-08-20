@@ -901,7 +901,6 @@ const defaultStyling =
   text-align: center;
   color: black;
   background: #ffffff00;
-  padding: 10px;
   border: solid 1px black;
 }
 
