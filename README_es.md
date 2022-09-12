@@ -259,6 +259,8 @@ Así se puede tener una idea muy general de la variedad del texto original. Si l
 
 ## Historias interactivas basadas en texto :alien:
 
+:exclamation: El sistema de historias interactivas de Aventura cuenta con una interfaz que, aunque por el momento se encuentra en beta, facilita mucho el trabajo. Con esta interfaz se puede diseñar y exportar toda la historia interactiva de una forma visual mucho más amigable e intuitiva que la escritura de código de JavaScript. Para probar la interfaz, [haz clic aquí](https://srsergiorodriguez.github.io/aventura-interactiva/).
+
 ### Lo básico
 
 Aventura te permite crear [Historias interactivas basadas en texto](https://es.wikipedia.org/wiki/Aventura_conversacional), en las que debes tomar decisiones que cambian el rumbo de la historia. Aventura produce una interfaz muy simple que permite navegar una historia interactiva de este tipo y controla el camino de decisiones que siguen tus lectores. Aunque viene con unos ajustes por defecto, el estilo de tal interfaz es muy personalizable si conoces los fundamentos [CSS](https://developer.mozilla.org/es/docs/Web/CSS).
@@ -327,6 +329,8 @@ const escenas = {
 ```
 
 Por supuesto, estas escenas son un ejemplo sencillo, útil para explicar los fundamentos básicos de la librería, pero tú puedes hacer cosas mucho más complejas, con un número mayor de escenas.
+
+:exclamation: El sistema de historias interactivas de Aventura cuenta con una interfaz que, aunque por el momento se encuentra en beta, facilita mucho el trabajo. Con esta interfaz se puede diseñar y exportar toda la historia interactiva de una forma visual mucho más amigable e intuitiva que la escritura de código de JavaScript. Para probar la interfaz, [haz clic aquí](https://srsergiorodriguez.github.io/aventura-interactiva/).
 
 ### Corregir errores
 
