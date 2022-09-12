@@ -69,7 +69,7 @@ Supongamos que queremos crear una frase simple que está compuesta de dos partes
 
 Ahora que ya tenemos una gramática lo que sigue es escribirla en código para que Aventura pueda generar textos. En Aventura, para representar tu gramática en JavaScript debes declarar un *[objeto](https://developer.mozilla.org/es/docs/Learn/JavaScript/Objects/Basics)* que contiene una serie de *[arrays](https://developer.mozilla.org/es/docs/Web/JavaScript/Referencia/Objetos_globales/Array)* de *[strings](https://developer.mozilla.org/es/docs/Web/JavaScript/Referencia/Objetos_globales/String)*. Una de esas *arrays* es la base (la que tú escojas) que contiene el orden inicial y las demás representan opciones. Por conveniencia, a todas estas arrays las llamaremos 'reglas'. Para darle la indicación a aventura de que busque en las opciones de otra regla debes usar una etiqueta con corchetes angulares: `<regla>`.
 
-Así, una gramática muy simple, se vería así:
+Así, una gramática muy simple se vería así:
 
 ```Javascript
 const gramatica = {
