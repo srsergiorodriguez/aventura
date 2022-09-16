@@ -718,7 +718,7 @@ v2.4.1
 
 By Sergio Rodríguez Gómez @srsergiorodriguez
 
-This library is licensed under an [MIT LICENSE](./LICENSE)
+This documentation is licensed under an [MIT LICENSE](./LICENSE)
 
 <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a><br />This library is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
 
