@@ -1,5 +1,5 @@
 /*
-Aventura v2.5.0 (BETA)
+Aventura v2.5.0
 Hipertextual fiction, interactive panels, generative text
 Copyright (c) 2020 - 2023 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
 Released under MIT License
