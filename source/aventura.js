@@ -1,23 +1,32 @@
 /*
-Aventura v2.4.1
-A library for making biterature / Una librería para hacer biteratura
-Copyright (c) 2020 - 2022 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
+Aventura v2.5.0 (BETA)
+Hipertextual fiction, interactive panels, generative text
+Copyright (c) 2020 - 2023 Sergio Rodríguez Gómez // https://github.com/srsergiorodriguez
 Released under MIT License
 */
 
 class Aventura {
-  constructor(lang = 'en',options) {
+  constructor(lang = 'en', options) {
     this.lang = (lang === 'en' || lang === 'es') ? lang : 'en';
     this.options = {
       typewriterSpeed: 50,
       defaultCSS: true,
       adventureContainer: undefined,
       adventureScroll: false,
+      adventureSlide: true,
+      evalTags: false,
       igramaFormat: 'png',
+      urlWord: "URL",
+      vizWidth: 1000,
+      vizHeight: 1000,
+      vizBg: "#313131",
+      vizCol: "black",
+      vizImageSize: 50,
+      vizLoading: true,
       minigifOptions: {},
       sceneCallback: (s)=>{return s} // Returns the current scene
     }
-    if (options) {this.options = Object.assign(this.options,options)}
+    if (options) { this.options = Object.assign(this.options, this.setOptionsTranslations(options)) }
     this.grammarError = false;
     this.scenesError = false;
 
@@ -27,6 +36,7 @@ class Aventura {
     this.probarGramatica = this.testGrammar;
 
     this.fijarEscenas = this.setScenes;
+    this.fijarDatosEscenas = this.setDataScenes;
     this.iniciarAventura = this.startAdventure;
     this.probarEscenas = this.testScenes;
 
@@ -48,6 +58,36 @@ class Aventura {
 
   // MAIN INPUT FUNCTIONS
 
+  setOptionsTranslations(options) {
+    const trans = {
+      "velocidadMaquina": "typewriterSpeed",
+      "CSSporDefecto": "defaultCSS",
+      "contenedorAventura": "adventureContainer",
+      "rolloAventura": "adventureScroll",
+      "deslizarAImagen": "adventureSlide",
+      "ejecutarEtiquetas": "evalTags",
+      "formatoIgrama": "igramaFormat",
+      "palabraUrl": "urlWord",
+      "anchoVis": "vizWidth",
+      "altoVis": "vizHeight",
+      "fondoVis": "vizBg",
+      "colorVis": "vizCol",
+      "tamanoImagenVis": "visImageSize",
+      "cargandoVis": "vizLoading",
+      "opcionesMinigif": "minigifOptions",
+      "funcionEscena": "sceneCallback"
+    }
+
+    for (let [k, v] of Object.entries(options)) {
+      if (trans[k] !== undefined) {
+        options[trans[k]] = v;
+        delete options[k];
+      }
+    }
+
+    return options
+  }
+
   setGrammar(grammar) {
     this.grammar = grammar;
     return this
@@ -63,6 +103,7 @@ class Aventura {
   }
 
   setScenes(scenes) {
+    if (this.options.defaultCSS) {this.setCSS()};
     this.scenes = scenes;
 
     for (let key of Object.keys(scenes)) {
@@ -82,6 +123,128 @@ class Aventura {
     return this
   }
 
+  async setDataScenes(scenes, data = undefined, meta = []) {
+    if (this.options.defaultCSS) {this.setCSS()};
+
+    if (typeof d3 === 'undefined') {
+      console.error(this.lang === 'es' ? "Para crear visualizaciones debes tener también la librería D3" : "To create visualizations you must have also the D3 library");
+      return
+    }
+
+    this.scenes = JSON.parse(JSON.stringify(scenes));
+    this.metaKeys = meta;
+
+    if (data !== undefined) {
+      this.data = JSON.parse(JSON.stringify(data));
+      await this.setViz(this.scenes, this.data);
+    }
+
+    this.setScenes(this.scenes);
+    
+    return this
+  }
+
+  async setViz(scenes, data) {
+    const keys = Object.keys(scenes);
+    const vizFunction = { 'compare': compareViz, 'scatter': scatterViz, 'pack': packViz }
+
+    let vizCount = 0;
+    for (let k of keys) {
+      if (scenes[k].viz === undefined) continue
+      vizCount++;
+    }
+
+    
+    // PROGRESS BAR
+    let loadState = 0;
+    let generaldiv;
+    const loadMsg =  this.lang === 'en' ? "Loading..." : "Cargando...";
+    if (this.options.vizLoading) {
+      
+      generaldiv = document.createElement("div");
+      generaldiv.id = "storygeneraldiv";
+      generaldiv.className = "storydiv";
+      generaldiv.textContent = loadMsg;
+      const parent = this.options.adventureContainer !== undefined ? document.getElementById(this.options.adventureContainer) : document.body;
+      parent.appendChild(generaldiv);
+    }
+    
+    function pbar(v, n = 15) {
+      let str = "";
+      for (let i = 0; i < Math.ceil(n); i++) {
+        str += i < v * n ? "|" : "-";
+      }
+      return str
+    }
+
+    for (let k of keys) {
+      if (scenes[k].viz === undefined) continue
+      const {filter, type, x, y} = scenes[k].viz;
+      if (vizFunction[type] === undefined || x === undefined || y === undefined) {
+        const errorMsg = this.lang === 'es' ?
+            `Parámetros incorrectos de visualización en la escena "${k}"` :
+            `Incorrect parameteres in the scene "${k}"`;
+        console.error(errorMsg);
+      }
+      let filtered = data;
+      for (let f of filter) {
+        const fn = this.filterFn(f);
+        filtered = fn(filtered);
+      }
+
+      let prevLoadState = loadState;
+      const {viz, areas} = await vizFunction[type](this, filtered, x, y, (progress) => {
+        loadState = prevLoadState + (progress/vizCount);
+        const percentage = Math.ceil(loadState*100);
+        if (this.options.vizLoading) {
+          generaldiv.textContent = `${loadMsg} ${pbar(loadState)} ${percentage}%`;
+        }
+      });
+      scenes[k].image = viz;
+      scenes[k].areas = areas;
+    }
+
+    for (let d of data) {
+      if (d.ID === undefined) {
+        const errorMsg = this.lang === 'es' ?
+            `Todos los datos deben tener un valor único con la clave ID` :
+            `All data must have a unique value with the ID key`;
+        console.error(errorMsg);
+        this.scenes = {};
+        break
+      }
+      scenes[`ind_${d.ID}`] = {
+        text: `${d.CONT || ''}`,
+        meta: d.ID,
+        dataScene: true,
+        options: [{btn: "<<<", scene: `ind_${d.ID}`}]
+      }
+      if (d.IMGURL !== undefined) {
+        scenes[`ind_${d.ID}`].image = d.IMGURL;
+      }
+      if (d.URL !== undefined) {
+        scenes[`ind_${d.ID}`].url = d.URL;
+      }
+    }
+
+    generaldiv.remove();
+  }
+
+  filterFn(f) {
+    const comp = f[1];
+    if (comp === "=" || comp === "==" || comp === "===") {
+      return data => data.filter(d => b(d[f[0]]) == b(f[2])) 
+    } else if (comp === "<") {
+      return data => data.filter(d => b(d[f[0]]) < b(f[2])) 
+    } else if (comp === ">") {
+      return data => data.filter(d => b(d[f[0]]) > b(f[2]))
+    } else {
+      return data => data
+    }
+
+    function b(v) { return v === "true" ? true : v === "false" ? false : v; }
+  }
+
   setMarkov(model) {
     this.markov = model;
     return this
@@ -89,7 +252,7 @@ class Aventura {
 
   // GRAMMAR EXPANSION
 
-  expandGrammar(start) {
+  expandGrammar(start) {
     const firstString = this.selectGrammarRule(this.grammar[start]);
     return this.grammarRuleRecursion(firstString);
   }
@@ -174,14 +337,13 @@ class Aventura {
   // INTERACTIVE STORY
 
   startAdventure(start) {
-    if (this.options.defaultCSS) {this.setCSS()};
-
     // Create the div that will contain the adventure
     const generaldiv = document.createElement("div");
     generaldiv.id = "storygeneraldiv";
     const parent = this.options.adventureContainer !== undefined ? document.getElementById(this.options.adventureContainer) : document.body;
     parent.appendChild(generaldiv);
 
+    this.prevScene = start;
     // Start the interactive story display
     this.goToScene(this.scenes[start]);
     return this
@@ -201,7 +363,7 @@ class Aventura {
     
     const storydiv = document.createElement("div");
     storydiv.className = "storydiv";
-    generaldiv.appendChild(storydiv);
+    generaldiv.appendChild(storydiv);  
 
     // Create image (if there's a path available)
     if (scene.image || scene.imagen) {
@@ -237,6 +399,41 @@ class Aventura {
       });
     }
 
+    // Create title
+    if (scene.title || scene.titulo) {
+      const title_container = document.createElement("div");
+      title_container.className = "storytitle-container";
+      storydiv.appendChild(title_container);
+      const title = document.createElement("h1");
+      title.className = "storytitle";
+      title.textContent = scene.title || scene.titulo;
+      title_container.appendChild(title);
+    }
+
+    // Create metadata
+    if (scene.meta !== undefined) {
+      const meta_container = document.createElement("div");
+      meta_container.className = "storymeta-container";
+      storydiv.appendChild(meta_container);
+      const dataPoint = this.data.find(d => d.ID == scene.meta);
+      for (let mk of this.metaKeys) {
+        if (dataPoint[mk] === undefined) continue;
+        const div = document.createElement("div");
+        div.className = "storymeta-subcontainer";
+        meta_container.appendChild(div);
+
+        const key = document.createElement("span");
+        key.className = "storymeta-key";
+        key.textContent = `${mk}: `;
+        div.appendChild(key);
+
+        const val = document.createElement("span");
+        val.className = "storymeta-val";
+        val.textContent = dataPoint[mk];
+        div.appendChild(val);
+      }
+    }
+
     // Create text paragraph
     const paragraph_container = document.createElement("div");
     paragraph_container.className = "storyp-container";
@@ -246,13 +443,33 @@ class Aventura {
 
     const paragraph = document.createElement("p");
     paragraph.className = "storyp";
-    paragraph.innerHTML = "";
+    paragraph.textContent = "";
     paragraph_container.appendChild(paragraph);
 
+    // Create external URL
+    if (scene.url) {
+      const url = document.createElement("a");
+      url.className = "storyurl";
+      url.href = scene.url;
+      url.target = "_blank";
+      url.textContent = this.options.urlWord;
+      paragraph_container.appendChild(url);
+    }
+
     // Scroll to end of storydiv
-    document.getElementById("storygeneraldiv").scrollIntoView({ behavior: 'smooth', block: 'end'});
+    if (this.options.adventureSlide) { document.getElementById("storygeneraldiv").scrollIntoView({ behavior: 'smooth', block: 'end'}) };
     
     this.typewriter(paragraph, scene);
+
+    if (this.data) {
+      if (scene.viz !== undefined) {
+        this.prevScene = scene.key
+      } else {
+        if (scene.dataScene === true) {
+          scene.options[0].scene = this.prevScene;
+        }
+      }
+    }
 
     this.options.sceneCallback(scene);
   }
@@ -281,8 +498,10 @@ class Aventura {
       area.style.top = `${dims.top - dimsC.top + top}px`;
       area.style.width = `${a.w*dims.width/imgSource.naturalWidth}px`;
       area.style.height = `${a.h*dims.height/imgSource.naturalHeight}px`;
-      area.innerHTML = a.btn || '';
-      parent.appendChild(area);
+      area.textContent = a.btn || '';
+      if (left > 0 && left < dims.width && top > 0 && top < dims.height) {
+        parent.appendChild(area);
+      }
 
       area.style.fontSize = `${18*dims.height/imgSource.naturalHeight}px`;
       area.onclick = () => {
@@ -292,35 +511,46 @@ class Aventura {
 
       if (a.tooltip !== undefined) {
         area.onmouseover = () => {
-          area.innerHTML = a.tooltip || '';
+          area.textContent = a.tooltip || '';
           area.style.zIndex =  '100';
         }
         area.onmouseout = () => {
-          area.innerHTML = a.btn || '';
+          area.textContent = a.btn || '';
           area.style.zIndex =  '0';
         }
       }
     }
   }
 
-  typewriter(paragraph,scene) {
+  async typewriter(paragraph,scene) {
     // Writes the text in a typewriter effect, and once it finishes, shows buttons
     const textContent = scene.text || scene.texto || scene.igramaText || '';
     let text = this.grammar ? this.grammarRuleRecursion(textContent) : textContent;
     text = text.replace(/\n/g,'<br>');
     if (this.options.typewriterSpeed > 0) {
       let i = 0;
-      const interval = setInterval(()=>{
-        const textpart = text.substring(0,i);
-        paragraph.innerHTML = textpart;
-        i++;
-        if (i>text.length) {
-          clearInterval(interval);
-          this.optionButtons(scene);
-        }
-      }, Math.floor(this.options.typewriterSpeed));
+      await new Promise( r =>{
+        const interval = setInterval(()=>{
+          const textpart = text.substring(0,i);
+          if (this.options.evalTags) {
+            paragraph.innerHTML = textpart;
+          } else {
+            paragraph.textContent = textpart;
+          }
+          i++;
+          if (i>text.length) {
+            clearInterval(interval);
+            r(true)
+          }
+        }, Math.floor(this.options.typewriterSpeed));
+      });
+      this.optionButtons(scene);
     } else {
-      paragraph.innerHTML = text;
+      if (this.options.evalTags) {
+        paragraph.innerHTML = text;
+      } else {
+        paragraph.textContent = text;
+      }
       this.optionButtons(scene);
     }
   }
@@ -342,7 +572,7 @@ class Aventura {
       for (let option of options) {
         const optionButton = document.createElement("button");
         optionButton.className = "storybutton";
-        optionButton.innerHTML = option.btn;
+        optionButton.textContent = option.btn;
         btns_container.appendChild(optionButton);
         optionButton.addEventListener("click",() => {
           const includesText = option.text || option.texto;
@@ -359,14 +589,14 @@ class Aventura {
       const nextScene = scene.scene || scene.escena;
       const continueButton = document.createElement("button");
       continueButton.className = "storybutton";
-      continueButton.innerHTML = this.lang === 'en' ? "Continue" : "Continuar";
+      continueButton.textContent = this.lang === 'en' ? "Continue" : "Continuar";
       btns_container.appendChild(continueButton);
-      continueButton.addEventListener("click",()=>{
+      continueButton.addEventListener("click",() => {
         this.goToScene(this.scenes[nextScene]);
       });
     }
 
-    document.getElementById("storygeneraldiv").scrollIntoView({ behavior: 'smooth', block: 'end'});
+    if (this.options.adventureSlide) { document.getElementById("storygeneraldiv").scrollIntoView({ behavior: 'smooth', block: 'end'}) };
   }
 
   // GRAMMAR UTILITIES
@@ -838,6 +1068,258 @@ class Aventura {
   }
 }
 
+// PANEL VIZ
+
+async function compareViz(instance, data, h1, h2, imgLoadCallback = () => {}) {
+  const filtered = [data.find(d => d.ID == h1), data.find(d => d.ID == h2)];
+  const width = instance.options.vizWidth;
+  const height = instance.options.vizHeight;
+
+  let progress = 0;
+  const imgs = [];
+  for (let f of filtered) {
+    const img = new Image();
+    img.setAttribute('crossorigin', 'anonymous');
+    img.src = f.IMGURL;
+    await new Promise(r => { img.onload = () => { r(true) }});
+    imgs.push({ url: f.IMGURL, img, ID: f.ID  });
+    imgLoadCallback(progress/filtered.length);
+    progress++;
+  }
+  
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = width;
+  canvas.height = height;
+  
+  ctx.fillStyle = instance.options.vizBg;
+  ctx.fillRect(0, 0, width, height);
+
+  const areas = [];
+  let count = 0;
+  for (let i of imgs) {
+    const m = parseInt(width / 2) * 0.1
+    const w = parseInt(width / 2) - m;
+    const h = parseInt(w * i.img.height / i.img.width);
+    const x = (count * (w + m)) + (w/2) + (m/2);
+    const y = height/2;
+    
+    ctx.save();
+    ctx.translate(-w/2, -h/2);
+    ctx.drawImage(i.img, x, y, w, h);
+    ctx.restore();
+
+    const area = {
+      x, y, w, h,
+      btn: "",
+      scene: `ind_${i.ID}`,
+      tooltip: ""
+    }
+    areas.push(area);
+    count++;
+  }
+
+  const viz = canvas.toDataURL('image/png');
+  canvas.remove();
+
+  return {viz, areas}
+}
+
+async function scatterViz(instance, data, vx, vy, imgLoadCallback = () => {}) {
+  const width = instance.options.vizWidth;
+  const height = instance.options.vizHeight;
+
+  const size = instance.options.vizImageSize;
+  const margin = {l: 0.2 * width, r: 0.1 * width, t: 0.1 * height, b: 0.1 * height};
+  const wm = width - margin.l - margin.r;
+  const hm = height - margin.t - margin.b;
+  
+  const filtered = data;
+
+  const domainX = [...new Set(filtered.map(d => d[vx]))];
+  const domainY = [...new Set(filtered.map(d => d[vy]))];
+  const scaleX = d3.scalePoint().domain(domainX).range([0, wm]).padding(0.5).round(true);
+  const scaleY = d3.scalePoint().domain(domainY).range([0, hm]).padding(0.5).round(true);
+
+  let progress = 0;
+  const imgs = [];
+  for (let d of filtered) {
+    if (instance.imgsMemo[d.IMGURL] === undefined) {
+      const img = new Image();
+      img.setAttribute('crossorigin', 'anonymous');
+      img.src = d.IMGURL;
+      instance.imgsMemo[d.IMGURL] = await new Promise(r => { img.onload = () => { r(img) }});
+    }
+    imgs.push({ url: d.IMGURL, x: scaleX(d[vx]), y: scaleY(d[vy]), img: instance.imgsMemo[d.IMGURL], r: size, ID: d.ID });
+    imgLoadCallback(progress/filtered.length);
+    progress++;
+  }
+
+  const simulation = d3.forceSimulation(imgs)
+    .force("charge", d3.forceManyBody().strength(5))
+    .force("collide", d3.forceCollide(10))
+    .tick(200)
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = width;
+  canvas.height = height;
+  
+  ctx.fillStyle = instance.options.vizBg;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.strokeStyle = instance.options.vizCol;
+  ctx.font = "14px serif";
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+
+  for (let d of domainX) {
+    ctx.fillStyle = instance.options.vizCol;
+    ctx.fillText(d, margin.l + scaleX(d), margin.t + hm + (margin.b / 2));
+  }
+  ctx.beginPath();
+  ctx.moveTo(margin.l, margin.t + hm);
+  ctx.lineTo(margin.l + wm, margin.t + hm);
+  ctx.stroke();
+
+  ctx.textAlign = "right";
+  for (let d of domainY) {
+    ctx.fillStyle = instance.options.vizCol;
+    ctx.fillText(d, margin.l - 5, margin.t + scaleY(d));
+  }
+  ctx.beginPath();
+  ctx.moveTo(margin.l, margin.t);
+  ctx.lineTo(margin.l, margin.t + hm);
+  ctx.stroke();
+
+  ctx.strokeStyle = instance.options.vizCol;
+
+  const areas = [];
+  for (let i of imgs) {
+    const w = size;
+    const h = w * i.img.height / i.img.width;
+    const x = i.x + margin.l;
+    const y = i.y + margin.t;
+
+    ctx.save();
+    ctx.translate(-w/2, -h/2);
+    ctx.drawImage(i.img, x, y, w, h);
+    ctx.restore();
+
+    const area = {
+      x, y, w, h,
+      btn: "",
+      scene: `ind_${i.ID}`,
+      tooltip: ""
+    }
+    areas.push(area);
+  }
+
+  const viz = canvas.toDataURL('image/png');
+  
+  canvas.remove();
+  return {viz, areas}
+}
+
+async function packViz(instance, data, h1, h2, imgLoadCallback = () => {}) {
+  const width = instance.options.vizWidth;
+  const height = instance.options.vizHeight;
+
+  const filtered = data;
+  const groups = d3.rollup(filtered, v => v.length, d => d[h1], d => d[h2])
+  const childrenAccessorFn = ([ key, value ]) => value.size && Array.from(value)
+  const root = d3.hierarchy(groups, childrenAccessorFn)
+    .sum(([,value]) => value)
+    .sort((a, b) => b.value - a.value)
+
+  const scheme = [...d3.schemeGreys[4]].reverse();
+  
+  const desc = root.descendants();
+
+  const color = (v) => scheme[v];
+
+  d3.pack(root)
+    .size([width, height])
+    .padding(20)
+    (root)
+  
+  const imgs = [];
+  let progress = 0;
+  for (let f of filtered) {
+    for (let d of root.leaves()) {
+      if (f[h1] === d.parent.data[0] && f[h2] === d.data[0]) {
+        if (instance.imgsMemo[f.IMGURL] === undefined) {
+          const img = new Image();
+          img.setAttribute('crossorigin', 'anonymous');
+          img.src = f.IMGURL;
+          instance.imgsMemo[f.IMGURL] = await new Promise(r => { img.onload = () => { r(img) }});
+        }
+        imgs.push({ url: f.IMGURL, x: d.x, y: d.y, r: instance.options.vizImageSize, img: instance.imgsMemo[f.IMGURL], ID: f.ID });
+      }
+    }
+    imgLoadCallback(progress/filtered.length);
+    progress++;
+  }
+  
+  d3.forceSimulation(imgs)
+    .force("collide", d3.forceCollide(20))
+    .tick(200)
+  
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = width;
+  canvas.height = height;
+  
+  ctx.fillStyle = instance.options.vizBg;
+  ctx.fillRect(0, 0, width, height);
+  
+  ctx.font = "12px serif";
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+
+  for (let d of desc) {
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    
+      ctx.strokeStyle = instance.options.vizCol;
+      ctx.fillStyle = color(d.depth);
+    
+      ctx.beginPath();
+      ctx.ellipse(0, 0, d.r, d.r, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = instance.options.vizCol;
+      ctx.fillText(d.depth === 1 || d.depth === 2 ? d.data[0] : "", 0, -d.r - 5);
+    ctx.restore();
+  }
+
+  const areas = [];
+  for (let i of imgs) {
+    const w = parseInt(50);
+    const h = parseInt(w * i.img.height / i.img.width);
+    const x = i.x;
+    const y = i.y;
+    
+    ctx.save();
+    ctx.translate(-w/2, -h/2);
+    ctx.drawImage(i.img, x, y, w, h);
+    ctx.restore();
+
+    const area = {
+      x, y, w, h,
+      btn: "",
+      scene: `ind_${i.ID}`,
+      tooltip: ""
+    }
+    areas.push(area);
+  }
+
+  const viz = canvas.toDataURL('image/png');
+  canvas.remove();
+  return {viz, areas}
+}
+
 const defaultStyling = 
 `#storygeneraldiv {
   box-sizing: border-box;
@@ -848,17 +1330,29 @@ const defaultStyling =
 }
 
 .storydiv {
+  box-sizing: border-box;
   border: solid black 1px;
   width: 100%;
   display: flex;
-  padding: 10px;
+  padding: 1em;
   flex-direction: column;
-  box-sizing: border-box;
+}
+
+.storytitle {
+  font-size: 2em;
+  margin: 0.1em 0;
 }
 
 .storyp {
-  font-size: 18px;
-  min-height: 25px;
+  font-size: 1em;
+}
+
+.storymeta-container {
+  margin: 0.5em 0;
+}
+
+.storymeta-key {
+  font-weight: 700;
 }
 
 .storybutton-container {
@@ -896,6 +1390,7 @@ const defaultStyling =
 }
 
 .storyimage-area {
+  box-sizing: border-box;
   position: absolute;
   cursor: pointer;
   text-align: center;

@@ -34,7 +34,7 @@ En tu código de Javascript, para empezar a usar la librería, crea una instanci
         - [Crear nuevas reglas](#crear-nuevas-reglas)
     - [Imágenes generativas - igramas](#imágenes-generativas---igramas)
       - [Lo básico](#lo-básico-1)
-    - [Texto generativo con Cadenas de Markov :floppy_disk:](#texto-generativo-con-cadenas-de-markov-floppy_disk)
+    - [Texto generativo con Cadenas de Markov :floppy\_disk:](#texto-generativo-con-cadenas-de-markov-floppy_disk)
       - [Lo básico](#lo-básico-2)
       - [Guardar el modelo](#guardar-el-modelo)
       - [Analizar el modelo](#analizar-el-modelo)
@@ -42,15 +42,17 @@ En tu código de Javascript, para empezar a usar la librería, crea una instanci
     - [Lo básico](#lo-básico-3)
     - [Corregir errores](#corregir-errores-1)
     - [Historias interactivas - opciones avanzadas](#historias-interactivas---opciones-avanzadas)
-      - [Usa áreas de las imágenes además de botones](#usa-áreas-de-las-imágenes-además-de-botones)
       - [¡Añade imágenes!](#añade-imágenes)
+      - [Usa áreas de las imágenes además de botones](#usa-áreas-de-las-imágenes-además-de-botones)
       - [Usar texto generativo en las historias](#usar-texto-generativo-en-las-historias)
+      - [Paneles interactivos](#paneles-interactivos)
   - [Configuración personalizada](#configuración-personalizada)
     - [Escoger un contenedor](#escoger-un-contenedor)
     - [Cambiar la velocidad de la máquina de escribir](#cambiar-la-velocidad-de-la-máquina-de-escribir)
     - [Cambiar el formato del Igrama](#cambiar-el-formato-del-igrama)
     - [Cambiar opciones de MiniGif](#cambiar-opciones-de-minigif)
-    - [Scrolling](#scrolling)
+    - [Modo Rollo o Scrolling](#modo-rollo-o-scrolling)
+    - [Deslizar a imagen](#deslizar-a-imagen)
     - [Código personalizado en las escenas](#código-personalizado-en-las-escenas)
     - [Sobreescribir el estilo de la interfaz](#sobreescribir-el-estilo-de-la-interfaz)
   - [Resumen rápido](#resumen-rápido)
@@ -348,24 +350,6 @@ Esto quiere decir que hay que revisar si está mal escrito el nombre de la escen
 
 ### Historias interactivas - opciones avanzadas
 
-#### Usa áreas de las imágenes además de botones
-Puedes usar areas cliqueables dentro de las imágenes de las escenas de tu historia que llevan a nuevas escenas. Para hacerlo, debes crear una array de `areas` en una escena con los siguientes parámetros para cada área:
-
-```Javascript
-// ... dentro de una escena
- areas: [
-  {
-    x: 500, // Posición en px en el eje X con respecto a la imagen original
-    y: 200, // Posición en px en el eje Y con respecto a la imagen original
-    w: 50, // Ancho del área en px
-    h: 50, // Alto del área en px
-    btn: "¡Hacia adelante!", // Texto contenido dentro del área (puedes dejar una string vacía)
-    escena: "1", // Escena a la que lleva al hacer clic
-    tooltip: "Cliquea" // Texto opcional que se presental al pasar el mouse por encima del área
-  }//, y así sucesivamente con otras areas dentro de la misma escena
- ]
-```
-
 #### ¡Añade imágenes!
 :surfer: También puedes añadir imágenes a tus escenas definiendo el parámetro 'imagen' para establecer el *path* o camino de una imagen en la carpeta de tu proyecto, tanto en tus escenas como en los subobjetos de decisión:
 
@@ -409,6 +393,24 @@ Puedes además usar imágenes generativas si pasas una gramática de igrama a Av
     texto: "Hola",
     igrama: "base"
   }
+```
+
+#### Usa áreas de las imágenes además de botones
+Puedes usar areas cliqueables dentro de las imágenes de las escenas de tu historia que llevan a nuevas escenas. Para hacerlo, debes crear una array de `areas` en una escena con los siguientes parámetros para cada área:
+
+```Javascript
+// ... dentro de una escena
+ areas: [
+  {
+    x: 500, // Posición en px en el eje X con respecto a la imagen original
+    y: 200, // Posición en px en el eje Y con respecto a la imagen original
+    w: 50, // Ancho del área en px
+    h: 50, // Alto del área en px
+    btn: "¡Hacia adelante!", // Texto contenido dentro del área (puedes dejar una string vacía)
+    escena: "1", // Escena a la que lleva al hacer clic
+    tooltip: "Cliquea" // Texto opcional que se presental al pasar el mouse por encima del área
+  }//, y así sucesivamente con otras areas dentro de la misma escena
+ ]
 ```
 
 #### Usar texto generativo en las historias
@@ -467,37 +469,70 @@ const escenas = {
 aventura.fijarGramatica(gramatica).fijarEscenas(escenas).iniciarAventura('portada');
 ```
 
+#### Paneles interactivos
+
+Inspirado en la práctica del historiador de arte [Aby Warburg](https://es.wikipedia.org/wiki/Aby_Warburg) y su Atlas Mnemosyne, es posible usar Aventura para crear paneles interactivos con distintos tipos de visualización. Para usar esta funcionalidad es necesario contar también con la librería [D3](https://d3js.org/). En esta modalidad, se puede pasar un conjunto de datos a Aventura y producir una serie de paneles/visualizaciones automatizados que permiten navegar la colección de datos. Las visualizaciones son: "compare", o un gráfico de comparación de dos imágenes simple, "scatter" o un gráfico de dispersión de imágenes en un eje cartesiano (tanto para valores numéricos como categórnicos), y "pack", un circle pack tree que sirve para mostrar jerarquías.
+
+Para usar esta modalidad se debe usar la función `fijarDatosEscenas` que recibe, primero, las escenas, y como segundo argumento una Array de objetos con los datos para construir los paneles. La carga de los datos puede tomar cierto tiempo, así que `fijarDatosEscenas` es una función asíncrona. Cuando se pasan datos a la función, Aventura creará una escena para cada uno de los elementos en la array. Cada objeto de la array que contiene los datos debe tener un atributo con la clave "ID" y con un valor único, y opcionalmente un atributo "CONT" con contenido descriptivo y una url a una imagen en el atributo "IMGURL". Así, estas claves están reservadas para el uso interno de aventura.
+
+Adicionalmente `fijarDatosEscenas` recibe un tercer argumento opcional, una array con nombres de las claves de atributos en la Array de datos. Aventura buscará esos atributos y los dispondrá como una especie de ficha técnica en cada escena creada automáticamente a partir de los datos.
+
+Para crear visualizaciones o paneles se deben crear escenas con el atributo viz y las siguientes configuraciones:
+
+```Javascript
+  // ... DENTRO DE ALGUNA ESCENA ...
+  viz:{
+    filter:[[arrayDeComparadores]], // una Array con Arrays representando los comparadores que filtrarán los datos, por ejemplo [["fecha","<", 1900]]
+    type: tipoDeVisualizacion, // "compare", "scatter", "pack"
+    x: dimensionX, y: dimensionY // configuración de dimensiones de la visualización
+    // Dimensiones X y Y: compare: IDS de datos, scatter: ejes cartesianos, pack: categorías jerárquicas
+  }
+```
+
 ## Configuración personalizada
 Puedes cambiar algunas opciones si pasas un objeto de configuración cuando creas una nueva instancia de Aventura:
 
 ```Javascript
 const config = {
-      typewriterSpeed: 50,
-      defaultCSS: true,
-      adventureContainer: undefined,
-      igramaFormat: 'png',
-      adventureScroll: false,
-      sceneCallback: (s) => { return s }
-    }
+  velocidadMaquina: 50, // Velpocidad a la que escribe el efecto de máquina de escribir. 0 para inmediato
+  CSSporDefecto: true, // Usa false para definir tu propio CSS
+  contenedorAventura: undefined, // Contenedor de la historia interactiva (por defecto: body)
+  formatoIgrama: 'png', // por defecto: 'png', o 'gif')
+  opcionesMinigif: {},
+  rolloAventura: false, // Mostrar la aventura en modo rollo, es decir, una escena tras otra.
+  deslizarAImagen: true, // Delizar la pantalla a la imagen de la escena en cada cambio de escena
+  ejecutarEtiquetas: false, // Ejecutar etiquetas HTML
+  palabraUrl: "URL", // Palabra por defecto que se mostrará en el enlace del panel interactivo
+  anchoVis: 1000, // Ancho de las visualizaciones
+  altoVis: 1000, // Alto de las visualizaciones
+  tamanoImagenVis: 50, // Tamaño de las miniaturas en las visualizaciones
+  fondoVis: "#313131", // Color de fondo de las visualizaciones
+  vizCol: "black", // Color de línea de las visualizaciones
+  cargandoVis: true, // Mostrar mensaje de carga de las visualizaciones
+  funcionEscena: (scene) => {return scene} // Función que se ejecuta con cada nueva escena
+}
 const aventura = new Aventura('es',config);
 ```
-Las opciones son:
+Las opciones más importantes son:
 
 ### Escoger un contenedor
-Puedes ubicar tu historia en el lugar que quieras en tu proyecto si defines un elemento html contenedor para la interfaz. Para eso, pon el nombre del *id* contenedor en el parámetro **adventureContainer**.
+Puedes ubicar tu historia en el lugar que quieras en tu proyecto si defines un elemento html contenedor para la interfaz. Para eso, pon el nombre del *id* contenedor en el parámetro **contenedorAventura**.
 
 ### Cambiar la velocidad de la máquina de escribir
 Para cambiar la velocidad del efecto de máquina de escribir pon como parámetro de **typewriterSpeed** en el objeto de configuración el valor que quieras. El valor por defecto es 50, es decir, una nueva letra cada 50 milisegundos.
-Si el valor de **typewriterSpeed** es 0, se desactiva el efecto y el texto aparece de inmediato.
+Si el valor de **velocidadMaquina** es 0, se desactiva el efecto y el texto aparece de inmediato.
 
 ### Cambiar el formato del Igrama
-Para cambiar el formato por defecto del igrama, pon "png" o "gif" en el parámetro **igramaFormat**. El formato por defecto es .png.
+Para cambiar el formato por defecto del igrama, pon "png" o "gif" en el parámetro **formatoIgrama**. El formato por defecto es .png.
 
 ### Cambiar opciones de MiniGif
-Cuando generas gifs con el igrama debes tener también en tu documento la libería [MiniGif](https://github.com/srsergiorodriguez/minigif). Puedes pasar opciones personalizadas a MiniGif desde Aventura usando el parametro **minigifOptions**.
+Cuando generas gifs con el igrama debes tener también en tu documento la libería [MiniGif](https://github.com/srsergiorodriguez/minigif). Puedes pasar opciones personalizadas a MiniGif desde Aventura usando el parametro **opcionesMinigif**.
 
-### Scrolling
-Puedes mostrar las escenas escogidas sucesivamente en formato vertical, en vez de reemplazar la escena anterior con una nueva escena una vez se escogió un nuevo camino si dejas el parámetro **adventureScroll** en `true`. Esta opción es útil, por ejemplo, para crear web cómics interactivos.
+### Modo Rollo o Scrolling
+Puedes mostrar las escenas escogidas sucesivamente en formato vertical, en "modo rollo" en vez de reemplazar la escena anterior con una nueva escena una vez se escogió un nuevo camino si dejas el parámetro **rolloAventura** en `true`. Esta opción es útil, por ejemplo, para crear web cómics interactivos.
+
+### Deslizar a imagen
+Por defecto, las historias interactivas deslizan la pantalla automáticamente a la parte superior de la escena cada vez que se carga, esto a veces puede causar incompatibilidades cuando se incrusta la aventura en otros contenederos. Por esta razón, el deslizamiento se puede desactivar poniendo la opción **delizarAImagen** como `false`.
 
 ### Código personalizado en las escenas
 Puedes ejecutar código personalizado en las escenas con el parámetro **igramaFormat** que define un callback que se ejecuta cada vez que se cambia de escena en la historia interactiva. Este callback devuelve la escena que se está presentando.
@@ -667,7 +702,7 @@ Historia interactiva:
 * Pasar escenas: `fijarEscenas(escenas);`
 * Mostrar interfaz de aventura: `inciarAventura(escenaDeInicio);`
 * Evaluar estructura de escenas: `probarEscenas(?escenas);`
-
+* Paneles interactivos: setDataScenes(escenas, datos, ?\[arrayNombresColumnasMeta\]);
 ---
 
 * Escena simple: `{texto, ?escena, ?imagen, ?sinSalida: escenaFinal}`

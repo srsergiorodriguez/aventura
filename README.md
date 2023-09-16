@@ -32,7 +32,7 @@ In your JavasScript code, to use the library, create a new Class instance of Ave
         - [Creating new rules](#creating-new-rules)
     - [Generative images - igramas](#generative-images---igramas)
       - [The basics](#the-basics-1)
-    - [Generative text with Markov chains :floppy_disk:](#generative-text-with-markov-chains-floppy_disk)
+    - [Generative text with Markov chains :floppy\_disk:](#generative-text-with-markov-chains-floppy_disk)
       - [The basics](#the-basics-2)
       - [Saving the model](#saving-the-model)
       - [Analyzing the model](#analyzing-the-model)
@@ -623,7 +623,17 @@ General:
     defaultCSS: true,
     adventureContainer: undefined, // interactive story container (default: body)
     igramaFormat: 'png', // default: 'png', or 'gif')
-    adventureScroll: true,
+    minigifOptions: {},
+    adventureScroll: false,
+    adventureSlide: true,
+    evalTags: false,
+    urlWord: "URL",
+    vizWidth: 1000,
+    vizHeight: 1000,
+    vizBg: "#313131",
+    vizCol: "black",
+    vizImageSize: 50,
+    vizLoading: true,
     sceneCallback: (scene) => {return scene}
   }
 ```

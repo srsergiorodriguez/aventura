@@ -1,5 +1,14 @@
 #RELEASE NOTES:
 
+## 2.5.0
+- Added the capability to create three types of visualizations, useful for including interactive panels into aventura: compare, scatter and circle pack.
+- For making the visualizations, now there is a `setDataScenes` function that accepts a second argument, `data`, with an array of objects containing datapoints. This new functionality adds some image processing time to the `setDataScenes` function, so, unlike the regular `setScenes`, it is an async function.
+- When `data` is passed to `setDataScenes`, Aventura will create a scene for each one of the datapoints. Each datapoint must have and id with the key "ID", and optionally a text content ("CONT") and an image url ("IMGURL").
+- with `setDataScenes` you can also include a third argument, `meta`. This argument receives an array of strings with keys present in the data list. If the parameter meta is included in a scene, with a value corresponding to the id of a datapoint, the interface of Aventura will present the data of the keys included in the meta argument of `setDataScenes`.
+- Added the `vizWidth: 1000` and `vizHeight: 1000` for determining the sizes of visualizations, and `vizCol: "black"` and `vizBg: "#313131"` for determining its stroke and background color. Added the `urlWord: "URL"` option to set a keyword for URLs that take to external content. Added the `vizLoading: true` to toggle between showing a loading screen or not.
+- Added the `adventureSlide` option (default: `true`), so it's possible to decide if the interactive will scroll into view after a new scene is rendered. Disabling this option is useful to avoid conflicts when Aventura is embedded in other frameworks, like ObservableHQ.
+- Added the `evalTags` option (default: `false`). Now HTML tags are not evaluated by default from the text content of interactive scenes (as a security measure). If you need that functionality, you can assign`true` to `evalTags`.
+
 ## 2.4.1
 - Added divs to different parts of the interactive story: image or igrama is contained in `storyimage-container`, paragraph is contained in `storyp-container`, and buttons are contained in `storybutton-container`
 - Added a scrolling option, useful for web comics or for stories that require keeping the previously visited scenes. Activate it by setting to true the parameter `adventureScroll` in the Aventura options. (Additionally, it clones the img nodes when this option is activated so the image does not get moved from one scene to another when the same scene is repeated)
