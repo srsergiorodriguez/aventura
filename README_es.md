@@ -64,6 +64,8 @@ En tu código de Javascript, para empezar a usar la librería, crea una instanci
 
 ### Texto generativo con Gramática libre de contexto :monkey:
 
+Si quieres ver un tutorial alternativo a esta documentación, The Programming Historian en español tiene una [lección](https://programminghistorian.org/es/lecciones/generadores-aventura), basada en un proyecto concreto, acerca de cómo usar la librería para hacer textos e imágenes generativas.
+
 #### Lo básico
 
 Un tipo de texto generativo que puedes crear con Aventura se estructura sobre la base de un sistema llamado *[Gramática libre de contexto](https://es.wikipedia.org/wiki/Gram%C3%A1tica_libre_de_contexto)*. En palabras menos extravagantes, puedes imaginar que el texto que vas a generar está definido por una posible secuencia de pedacitos de texto unidos, y para obtener los pedacitos finales debes definir dos cosas diferentes: un orden en el que irán unidos y unas opciones de las cuales escoger los pedacitos. El orden y las opciones conforman lo que llamaremos una "gramática".
@@ -554,19 +556,32 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
 /* Contenedor de la historia */
 
 .storydiv {
+  box-sizing: border-box;
   border: solid black 1px;
   width: 100%;
   display: flex;
-  padding: 10px;
+  padding: 1em;
   flex-direction: column;
-  box-sizing: border-box;
 }
 
-/* Párrafo de texto */
+/* Título, metadatos y párrafo de texto */
+
+.storytitle {
+  font-size: 2em;
+  margin: 0.1em 0;
+}
 
 .storyp {
   font-size: 18px;
   min-height: 25px;
+}
+
+.storymeta-container {
+  margin: 0.5em 0;
+}
+
+.storymeta-key {
+  font-weight: 700;
 }
 
 /* Botón de opciones */
@@ -609,19 +624,17 @@ Para cancelar el estilo por defecto de la interfaz, pasa `false` en el parámetr
 /* Área clickeable en la imagen */
 
 .storyimage-area {
+  box-sizing: border-box;
   position: absolute;
   cursor: pointer;
   text-align: center;
   color: black;
-  background: white;
-  border-radius: 4px;
-  padding: 10px;
+  background: #ffffff00;
   border: solid 1px black;
 }
 
 .storyimage-area:hover {
-  background: black;
-  color: white;
+  background: #ffffff33;
 }
 
 /* Configuración para dispositivos pequeños */
@@ -652,12 +665,22 @@ General:
 
 ```JavaScript
   opciones = {
-    typewriterSpeed: 50, // Velocidad de la máquina de escribir
-    defaultCSS: true, // Usar CSS por defecto
-    adventureContainer: undefined, // Contenedor de historia interactiva (body por defecto)
-    igramaFormat: 'png', // Formato de igrama en historia interactiva ('png', por defecto, o 'gif')
-    adventureScroll: true, // Despejar o no las escenas anteriores de la historia en curso
-    sceneCallback: (escena)=>{} // Callback cada vez que se cambia de escena
+    velocidadMaquina: 50, // Velpocidad a la que escribe el efecto de máquina de escribir. 0 para inmediato
+    CSSporDefecto: true, // Usa false para definir tu propio CSS
+    contenedorAventura: undefined, // Contenedor de la historia interactiva (por defecto: body)
+    formatoIgrama: 'png', // por defecto: 'png', o 'gif')
+    opcionesMinigif: {},
+    rolloAventura: false, // Mostrar la aventura en modo rollo, es decir, una escena tras otra.
+    deslizarAImagen: true, // Delizar la pantalla a la imagen de la escena en cada cambio de escena
+    ejecutarEtiquetas: false, // Ejecutar etiquetas HTML
+    palabraUrl: "URL", // Palabra por defecto que se mostrará en el enlace del panel interactivo
+    anchoVis: 1000, // Ancho de las visualizaciones
+    altoVis: 1000, // Alto de las visualizaciones
+    tamanoImagenVis: 50, // Tamaño de las miniaturas en las visualizaciones
+    fondoVis: "#313131", // Color de fondo de las visualizaciones
+    vizCol: "black", // Color de línea de las visualizaciones
+    cargandoVis: true, // Mostrar mensaje de carga de las visualizaciones
+    funcionEscena: (scene) => {return scene} // Función que se ejecuta con cada nueva escena
   }
 ```
 
@@ -758,7 +781,7 @@ Algunas implementaciones que quisiera añadir en el futuro son:
 * Crear una interfaz gráfica para diseñar las gramáticas y las historias de forma no líneal (como un árbol) que sea utilizable y exportable
 
 ## Versión, licencia y copyright
-v2.4.1
+v2.5.0
 
 Por Sergio Rodríguez Gómez @srsergiorodriguez
 
@@ -766,4 +789,4 @@ Esta librería está amparada bajo una [licencia MIT](./LICENSE)
 
 <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Licencia Creative Commons" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a><br />Esta documentación está bajo una <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Licencia Creative Commons Atribución-NoComercial-CompartirIgual 4.0 Internacional</a>.
 
-2022
+2023
