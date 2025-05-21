@@ -392,7 +392,7 @@ const scenes = {
   end1: {
     text: "Looks like the story took an ellipsis",
     deadEnd: true
-  }
+  },
   end2: {
     text: "Perfect, a round end",
     deadEnd: true
