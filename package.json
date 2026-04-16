@@ -1,0 +1,30 @@
+{
+  "name": "aventura",
+  "version": "3.0.0",
+  "description": "Biterature, generative text and interactive stories in JavaScript.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup -c",
+    "dev": "rollup -c -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/srsergiorodriguez/aventura.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/srsergiorodriguez/aventura/issues"
+  },
+  "homepage": "https://github.com/srsergiorodriguez/aventura#readme",
+  "devDependencies": {
+    "@rollup/plugin-terser": "^1.0.0",
+    "rollup": "^4.60.1"
+  }
+}

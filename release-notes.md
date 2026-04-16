@@ -1,5 +1,7 @@
 #RELEASE NOTES:
 
+## 3.0.0
+
 ## 2.5.0
 - Added the capability to create three types of visualizations, useful for including interactive panels into aventura: compare, scatter and circle pack.
 - For making the visualizations, now there is a `setDataScenes` function that accepts a second argument, `data`, with an array of objects containing datapoints. This new functionality adds some image processing time to the `setDataScenes` function, so, unlike the regular `setScenes`, it is an async function.
