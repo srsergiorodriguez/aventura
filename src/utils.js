@@ -1,6 +1,15 @@
-export async function loadJSON(path) {
-  const response = await fetch(path);
-  return await response.json();
+export async function loadJSON(url) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Aventura couldn't load the file. Status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error(`Aventura Error: Failed to load JSON from "${url}".\n`, error);
+    return null;
+  }
 }
 
 export function saveJSON(obj, filename) {

@@ -2,8 +2,10 @@ import { parseAventuraRule } from './parser.js';
 import { getRandomPick, applyTransforms, loadJSON } from './utils.js';
 import { buildMarkovModel } from './markov.js';
 
-import StoryEngine from './storyEngine.js';
-import StoryUI from './storyUI.js'
+import StoryEngine from './StoryEngine.js';
+import StoryUI from './StoryUI.js'
+import IgramaEngine from './IgramaEngine.js';
+import DataEngine from './DataEngine.js';
 
 export default class Aventura {
   constructor(lang = 'es', options = {}) {
@@ -16,6 +18,8 @@ export default class Aventura {
       adventureScroll: false,
       adventureSlide: true,
       evalTags: false,
+      igramaFormat: "png",
+      minigifOptions: {},
       theme: {
         background: '#ffffff',
         containerBorder: "solid 1px black",
@@ -33,7 +37,11 @@ export default class Aventura {
     this.markov = {};
     this.markovSeparator = " ";
     this.scenes = {};
+
+    // Engines
     this.storyEngine = new StoryEngine(this);
+    this.igramaEngine = new IgramaEngine(this);
+    this.dataEngine = new DataEngine(this.options);
     
     // Bilingual API Wrappers - Grammar
     this.fijarGramatica = this.setGrammar.bind(this);
@@ -49,6 +57,34 @@ export default class Aventura {
     this.fijarEscenas = this.setScenes.bind(this);
     this.iniciarAventura = this.startAdventure.bind(this);
     this.probarEscenas = this.testScenes.bind(this);
+
+    // Igrama API Wrappers
+    this.setIgrama = (igrama) => {
+      this.igramaEngine.setIgrama(igrama);
+      return this; // <-- This restores the chain!
+    };
+    this.expandIgrama = (start) => this.igramaEngine.expand(start);
+    this.igramaText = (layers) => this.igramaEngine.getText(layers);
+    this.igramaDataUrl = (layers, format) => this.igramaEngine.getDataUrl(layers, format || this.options.igramaFormat);
+
+    this.showIgrama = async (layers, format, containerId) => {
+      const url = await this.igramaDataUrl(layers, format);
+      const img = new Image();
+      img.src = url;
+      img.className = 'storyimage'; // Give it default styling
+      const parent = containerId ? document.getElementById(containerId) : document.body;
+      parent.appendChild(img);
+    };
+
+    // Data Engine Wrapper
+    this.setDataScenes = (scenes, data, metaKeys) => {
+      // 1. Let DataEngine inject ind_ scenes into the raw scenes object
+      const enhancedScenes = this.dataEngine.setupDataScenes(scenes, data, metaKeys);
+      // 2. Pass the enhanced object to the StoryEngine
+      this.storyEngine.setScenes(enhancedScenes);
+      return this;
+    };
+    this.fijarDatosEscenas = this.setDataScenes.bind(this);
 
     // Export Utilities for the user
     this.loadJSON = loadJSON;

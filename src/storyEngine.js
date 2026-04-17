@@ -8,6 +8,8 @@ export default class StoryEngine {
     this.onSceneChange = null;
 
     this.storyContext = {};
+
+    this.previousScene = null;
   }
 
   resetContext() {
@@ -25,6 +27,7 @@ export default class StoryEngine {
         deadEnd: scene.deadEnd !== undefined ? scene.deadEnd : scene.sinSalida,
         plop: scene.plop,
         title: scene.title !== undefined ? scene.title : scene.titulo,
+        igrama: scene.igrama,
         
         // Normalize areas
         areas: scene.areas ? scene.areas.map(a => ({
@@ -76,7 +79,15 @@ export default class StoryEngine {
   }
 
   _dispatchScene(sceneId, scene) {
+    if (this.currentScene !== sceneId) {
+      this.previousScene = this.currentScene;
+    }
     this.currentScene = sceneId;
+
+    // Handle dynamic "Go Back" button for auto-generated data scenes
+    if (scene.dataScene && this.previousScene) {
+      scene.options = [{ btn: "<<<", scene: this.previousScene }];
+    }
 
     // Process the generative text using the grammar engine (if attached)
     const parsedText = this.grammar ? this.grammar.expandText(scene.text || '', this.storyContext) : (scene.text || '');

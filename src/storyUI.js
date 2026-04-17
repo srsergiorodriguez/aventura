@@ -56,18 +56,45 @@ export default class StoryUI {
     this._renderText(sceneState, storydiv);
   }
 
-  _renderImageAndAreas(sceneState, storydiv) {
+async _renderImageAndAreas(sceneState, storydiv) {
+    // 1. Static Image
     const imgSrc = sceneState.image;
-    if (!imgSrc) return;
+    
+    // 2. Igrama Generative Image
+    const igramaRule = sceneState.rawScene.igrama;
+
+    if (!imgSrc && !igramaRule) return;
 
     const imgContainer = document.createElement("div");
     imgContainer.className = "storyimage-container";
     storydiv.appendChild(imgContainer);
 
-    const image = this.storyPreload[imgSrc] ? this.storyPreload[imgSrc].cloneNode() : new Image();
-    image.src = imgSrc;
-    image.className = "storyimage";
-    imgContainer.appendChild(image);
+    let image;
+
+    if (igramaRule && this.engine.grammar.igramaEngine) {
+      // It's an Igrama! We generate it on the fly.
+      image = new Image();
+      image.className = "storyimage";
+      imgContainer.appendChild(image);
+      
+      const layers = this.engine.grammar.expandIgrama(igramaRule);
+      
+      // If there's generative text attached to the image, append it to the parsed text
+      const extraText = this.engine.grammar.igramaText(layers);
+      if (extraText) {
+         sceneState.parsedText = extraText + "\n" + sceneState.parsedText;
+      }
+
+      const url = await this.engine.grammar.igramaDataUrl(layers, this.options.igramaFormat);
+      image.src = url;
+
+    } else if (imgSrc) {
+      // It's a standard static image
+      image = this.storyPreload[imgSrc] ? this.storyPreload[imgSrc].cloneNode() : new Image();
+      image.src = imgSrc;
+      image.className = "storyimage";
+      imgContainer.appendChild(image);
+    }
 
     if (sceneState.areas && sceneState.areas.length > 0) {
       image.onload = () => {
