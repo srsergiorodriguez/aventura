@@ -1,6 +1,7 @@
 {
   "name": "aventura",
   "version": "3.0.0",
+  "type": "module",
   "description": "Biterature, generative text and interactive stories in JavaScript.",
   "main": "index.js",
   "directories": {

@@ -259,7 +259,7 @@ aventura.loadJSON("./markov.json").then(model => {
 });
 ```
 
-In this way you can get a general idea of the variety of the original text. If tha majority of the distribution is close to the number 1, the text is not very diverse, and in consequence the generated text will be very simlar to the original. On the contrary, if the distribution is bigger, closer to the number 0, then the original text is more diverse and in consequence the generated text will also be diverse.
+In this way you can get a general idea of the variety of the original text. If the majority of the distribution is close to the number 1, the text is not very diverse, and in consequence the generated text will be very simlar to the original. On the contrary, if the distribution is bigger, closer to the number 0, then the original text is more diverse and in consequence the generated text will also be diverse.
 
 ## Interactive stories :alien:
 

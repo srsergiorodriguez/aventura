@@ -88,9 +88,9 @@ class Aventura {
     return options
   }
 
-  setGrammar(grammar) {
-    this.grammar = grammar;
-    return this
+  setGrammar(grammarObj) {
+    this.grammar = JSON.parse(JSON.stringify(grammarObj));
+    return this;
   }
 
   setIgrama(model) {
