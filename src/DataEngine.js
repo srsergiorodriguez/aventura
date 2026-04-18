@@ -1,3 +1,9 @@
+/**
+ * DataEngine
+ * A headless visualization engine designed for digital humanities and archival navigation.
+ * Inspired by Aby Warburg's Mnemosyne Atlas, it processes tabular data to automatically 
+ * generate interactive, D3-powered SVG visualizations and interconnected story scenes.
+ */
 export default class DataEngine {
   constructor(options) {
     this.options = options;
@@ -5,9 +11,13 @@ export default class DataEngine {
     this.metaKeys = [];
   }
 
-  // 1. Data Injection: Adds ind_ scenes to the standard scenes object
+  /**
+   * Ingests archival data and automatically generates individual artifact scenes (`ind_[ID]`).
+   * Injects these generated scenes directly into the StoryEngine's scene graph.
+   */
   setupDataScenes(scenes, data, metaKeys) {
-    if (typeof d3 === 'undefined') {
+    const d3Instance = globalThis.d3 || window.d3;
+    if (!d3Instance) {
       console.warn("Aventura: D3 library is required to use the Data Engine visualizations.");
       return scenes;
     }
@@ -17,15 +27,15 @@ export default class DataEngine {
 
     for (const d of this.data) {
       if (d.ID === undefined) {
-        console.error("Aventura: All data must have a unique 'ID' key.");
+        console.error("Aventura: All data items must contain a unique 'ID' key.");
         break;
       }
       
-      // Inject the individual item scene
+      // Construct the individual artifact scene
       scenes[`ind_${d.ID}`] = {
         text: d.CONT || '',
-        meta: d.ID, // We use this later to display the metaKeys (ficha técnica)
-        dataScene: true, // Flags this so StoryUI knows to inject a "Go Back" button dynamically
+        meta: d.ID, 
+        dataScene: true, // Flags the StoryEngine to dynamically inject a "Go Back" button
         options: [] 
       };
       
@@ -36,7 +46,10 @@ export default class DataEngine {
     return scenes;
   }
 
-  // 2. Filter Logic
+  /**
+   * Evaluates comparison rules (e.g., [["Year", ">", 1900]]) to filter 
+   * the dataset dynamically before rendering a visualization.
+   */
   _filterData(filterRules) {
     let filtered = this.data;
     if (!filterRules) return filtered;
@@ -58,7 +71,10 @@ export default class DataEngine {
     return filtered;
   }
 
-  // 3. Visualization Router
+  /**
+   * Central router that determines which D3 layout algorithm to execute
+   * based on the scene's `viz` configuration block.
+   */
   renderViz(vizConfig, width, height, onNavigate) {
     const filteredData = this._filterData(vizConfig.filter);
     
@@ -72,9 +88,15 @@ export default class DataEngine {
     return null;
   }
 
-  // --- D3 SVG VISUALIZATIONS ---
+  // ==========================================
+  // D3 SVG VISUALIZATION ALGORITHMS
+  // ==========================================
 
+  /**
+   * Renders a static side-by-side comparison of two specific artifacts.
+   */
   _compareViz(data, id1, id2, width, height, onNavigate) {
+    const d3 = globalThis.d3 || window.d3;
     const filtered = [data.find(d => d.ID == id1), data.find(d => d.ID == id2)].filter(Boolean);
     
     const svg = d3.create("svg")
@@ -96,7 +118,12 @@ export default class DataEngine {
     return svg.node();
   }
 
+  /**
+   * Maps artifacts onto a Cartesian plane using a force-directed layout 
+   * to resolve coordinate collisions.
+   */
   _scatterViz(data, vx, vy, width, height, onNavigate) {
+    const d3 = globalThis.d3 || window.d3;
     const size = this.options.vizImageSize || 50;
     const margin = {l: 0.2 * width, r: 0.1 * width, t: 0.1 * height, b: 0.1 * height};
     const wm = width - margin.l - margin.r;
@@ -108,7 +135,7 @@ export default class DataEngine {
     const scaleX = d3.scalePoint().domain(domainX).range([0, wm]).padding(0.5).round(true);
     const scaleY = d3.scalePoint().domain(domainY).range([0, hm]).padding(0.5).round(true);
 
-    // Initialize node positions
+    // Initialize node starting positions
     const nodes = data.map(d => ({
       ...d,
       x: scaleX(d[vx]) + margin.l,
@@ -119,7 +146,7 @@ export default class DataEngine {
       .attr("viewBox", [0, 0, width, height])
       .attr("class", "story-svg-viz");
 
-    // Draw Axes
+    // Construct categorical axes
     const axes = svg.append("g").attr("fill", "var(--av-text)").attr("font-size", "14px").attr("text-anchor", "middle");
     domainX.forEach(d => axes.append("text").attr("x", margin.l + scaleX(d)).attr("y", margin.t + hm + 20).text(d));
     axes.append("line").attr("x1", margin.l).attr("y1", margin.t + hm).attr("x2", margin.l + wm).attr("y2", margin.t + hm).attr("stroke", "var(--av-text)");
@@ -127,7 +154,7 @@ export default class DataEngine {
     domainY.forEach(d => axes.append("text").attr("x", margin.l - 10).attr("y", margin.t + scaleY(d)).attr("text-anchor", "end").attr("dominant-baseline", "middle").text(d));
     axes.append("line").attr("x1", margin.l).attr("y1", margin.t).attr("x2", margin.l).attr("y2", margin.t + hm).attr("stroke", "var(--av-text)");
 
-    // Draw Nodes
+    // Bind data to interactive SVG image nodes
     const nodeGroup = svg.append("g")
       .selectAll("image")
       .data(nodes)
@@ -137,7 +164,7 @@ export default class DataEngine {
       .style("cursor", "pointer")
       .on("click", (event, d) => onNavigate(`ind_${d.ID}`));
 
-    // Physics Simulation (Live Animation!)
+    // Live physics simulation tick logic
     d3.forceSimulation(nodes)
       .force("charge", d3.forceManyBody().strength(5))
       .force("collide", d3.forceCollide(size * 0.6))
@@ -150,7 +177,12 @@ export default class DataEngine {
     return svg.node();
   }
 
+  /**
+   * Implements a hierarchical circle-packing layout. Initializes nodes at the 
+   * canvas center to create an outward burst animation as the physics resolve.
+   */
   _packViz(data, h1, h2, width, height, onNavigate) {
+    const d3 = globalThis.d3 || window.d3;
     const size = this.options.vizImageSize || 40;
     
     const groups = d3.rollup(data, v => v.length, d => d[h1], d => d[h2]);
@@ -160,12 +192,18 @@ export default class DataEngine {
 
     d3.pack().size([width, height]).padding(20)(root);
 
-    // Map leaves back to data
+    // Map the calculated hierarchical leaf coordinates back to the artifact data
     const nodes = [];
     for (const f of data) {
       for (const d of root.leaves()) {
         if (f[h1] === d.parent.data[0] && f[h2] === d.data[0]) {
-          nodes.push({ ...f, targetX: d.x, targetY: d.y });
+          nodes.push({ 
+            ...f, 
+            targetX: d.x, 
+            targetY: d.y, 
+            x: width / 2, 
+            y: height / 2 
+          });
         }
       }
     }
@@ -174,7 +212,7 @@ export default class DataEngine {
       .attr("viewBox", [0, 0, width, height])
       .attr("class", "story-svg-viz");
 
-    // Draw bounding circles
+    // Draw hierarchical bounding circles
     const scheme = ["rgba(0,0,0,0)", "rgba(0,0,0,0.05)", "rgba(0,0,0,0.1)"];
     svg.append("g")
       .selectAll("circle")
@@ -185,7 +223,7 @@ export default class DataEngine {
       .attr("stroke", "var(--av-text)")
       .attr("stroke-opacity", 0.2);
 
-    // Labels
+    // Attach taxonomy labels
     svg.append("g").attr("fill", "var(--av-text)").attr("font-size", "12px").attr("text-anchor", "middle")
       .selectAll("text")
       .data(root.descendants().filter(d => d.depth === 1 || d.depth === 2))
@@ -193,7 +231,7 @@ export default class DataEngine {
       .attr("x", d => d.x).attr("y", d => d.y - d.r - 5)
       .text(d => d.data[0]);
 
-    // Draw Nodes
+    // Bind data to interactive SVG image nodes
     const nodeGroup = svg.append("g")
       .selectAll("image")
       .data(nodes)
@@ -203,7 +241,7 @@ export default class DataEngine {
       .style("cursor", "pointer")
       .on("click", (event, d) => onNavigate(`ind_${d.ID}`));
 
-    // Physics Simulation (Live Animation!)
+    // Live physics simulation tick logic
     d3.forceSimulation(nodes)
       .force("x", d3.forceX(d => d.targetX).strength(0.5))
       .force("y", d3.forceY(d => d.targetY).strength(0.5))

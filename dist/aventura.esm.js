@@ -1,3 +1,53 @@
+async function loadJSON(url) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Aventura couldn't load the file. Status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error(`Aventura Error: Failed to load JSON from "${url}".\n`, error);
+    return null;
+  }
+}
+
+function getRandomPick(arr) {
+  // Fallback if no valid probabilities
+  if (!arr.prob || !Array.isArray(arr.prob) || arr.prob.length !== arr.length) {
+    const index = Math.floor(Math.random() * arr.length);
+    return { element: arr[index], index };
+  }
+
+  const totalWeight = arr.prob.reduce((sum, weight) => sum + weight, 0);
+  const randomThreshold = Math.random() * totalWeight;
+
+  let weightAccumulator = 0;
+  for (let i = 0; i < arr.length; i++) {
+    weightAccumulator += arr.prob[i];
+    if (randomThreshold <= weightAccumulator) {
+      return { element: arr[i], index: i };
+    }
+  }
+
+  return { element: arr[arr.length - 1], index: arr.length - 1 };
+}
+
+function applyTransforms(text, transforms) {
+  let result = text;
+  
+  for (const t of transforms) {
+    if (t === 'ALLCAPS') {
+      result = result.toUpperCase();
+    } else if (t === 'CAPITALIZE') {
+      // Capitalizes the first letter of the string
+      result = result.charAt(0).toUpperCase() + result.slice(1);
+    }
+  }
+  
+  return result;
+}
+
 const updateParserState = (state, index, result) => ({ ...state, index, result });
 const updateParserResult = (state, result) => ({ ...state, result });
 const updateParserError = (state, errorMsg) => ({ ...state, isError: true, error: errorMsg });
@@ -183,157 +233,446 @@ function parseAventuraRule(ruleString) {
   return aventuraRuleParser.run(ruleString);
 }
 
-async function loadJSON(url) {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Aventura couldn't load the file. Status: ${response.status}`);
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error(`Aventura Error: Failed to load JSON from "${url}".\n`, error);
-    return null;
-  }
-}
-
-function getRandomPick(arr) {
-  // Fallback if no valid probabilities
-  if (!arr.prob || !Array.isArray(arr.prob) || arr.prob.length !== arr.length) {
-    const index = Math.floor(Math.random() * arr.length);
-    return { element: arr[index], index };
+/**
+ * GrammarEngine
+ * Handles the parsing and expansion of Context-Free Grammars. 
+ * Supports recursive tag expansion, dynamic variable assignment, and transformation rules.
+ */
+class GrammarEngine {
+  constructor() {
+    this.grammar = {};
   }
 
-  const totalWeight = arr.prob.reduce((sum, weight) => sum + weight, 0);
-  const randomThreshold = Math.random() * totalWeight;
-
-  let weightAccumulator = 0;
-  for (let i = 0; i < arr.length; i++) {
-    weightAccumulator += arr.prob[i];
-    if (randomThreshold <= weightAccumulator) {
-      return { element: arr[i], index: i };
-    }
+  /**
+   * Loads a parsed JSON grammar object into the engine.
+   * @param {Object} grammarObj - The grammar dictionary.
+   */
+  setGrammar(grammarObj) {
+    this.grammar = JSON.parse(JSON.stringify(grammarObj));
+    return this;
   }
 
-  return { element: arr[arr.length - 1], index: arr.length - 1 };
-}
-
-function applyTransforms(text, transforms) {
-  let result = text;
-  
-  for (const t of transforms) {
-    if (t === 'ALLCAPS') {
-      result = result.toUpperCase();
-    } else if (t === 'CAPITALIZE') {
-      // Capitalizes the first letter of the string
-      result = result.charAt(0).toUpperCase() + result.slice(1);
-    }
-  }
-  
-  return result;
-}
-
-function buildMarkovModel(text, ngram = 1, separator = " ") {
-  // Clean the text
-  let cleanedText = text.replace(/([,:.;])/g, " $1").replace(/[()\¿¡!?”“—-]/g, "").toLowerCase();
-  
-  const words = cleanedText.split(separator);
-  const fragments = {};
-
-  // Build the frequency map
-  for (let i = 0; i < words.length - ngram; i++) {
-    let f = "";
-    for (let j = 0; j < ngram; j++) {
-      f += j === 0 ? words[i + j] : " " + words[i + j];
+  /**
+   * Validates the loaded grammar. Checks for missing non-terminal references
+   * and uses a Depth-First Search (DFS) to detect infinite circular dependencies.
+   */
+  testGrammar() {
+    if (!this.grammar || Object.keys(this.grammar).length === 0) {
+      console.error("There is no grammar to test.");
+      return this;
     }
 
-    if (fragments[f] === undefined) { fragments[f] = {}; }
-    const nextWord = words[i + ngram];
+    let grammarError = false;
+    let errorCount = 0;
+    const dependencyGraph = {};
 
-    if (fragments[f][nextWord] === undefined) {
-      fragments[f][nextWord] = 1;
+    // Build an adjacency map of all dependencies
+    for (const [key, rules] of Object.entries(this.grammar)) {
+      if (!Array.isArray(rules)) continue; 
+      dependencyGraph[key] = new Set(); 
+
+      for (const ruleString of rules) {
+        const parsedState = parseAventuraRule(ruleString);
+        if (parsedState.isError) {
+          grammarError = true;
+          errorCount++;
+          console.error(`Syntax error in rule "${key}":`, parsedState.error);
+          continue;
+        }
+
+        const deadEnds = [];
+        for (const token of parsedState.result) {
+          if (token.type === 'non-terminal' && !token.value.includes('.')) {
+            if (!this.grammar[token.value]) deadEnds.push(token.value);
+            else dependencyGraph[key].add(token.value); 
+          } else if (token.type === 'dynamic-rule') {
+            for (const assign of token.assignments) {
+              if (assign.rule.includes('.')) continue;
+              if (!this.grammar[assign.rule]) deadEnds.push(assign.rule);
+              else dependencyGraph[key].add(assign.rule); 
+            }
+          }
+        }
+
+        if (deadEnds.length > 0) {
+          grammarError = true;
+          errorCount++;
+          console.error(`The following rules, referenced in "${key}", do not exist: ${deadEnds.join(", ")}`);
+        }
+      }
+    }
+
+    // Cycle Detection (DFS)
+    const visited = new Set();
+    const recursionStack = new Set();
+    const cycles = [];
+
+    const detectCycle = (node) => {
+      visited.add(node);
+      recursionStack.add(node);
+
+      if (dependencyGraph[node]) {
+        for (const neighbor of dependencyGraph[node]) {
+          if (!visited.has(neighbor)) {
+            detectCycle(neighbor);
+          } else if (recursionStack.has(neighbor)) {
+            cycles.push(`${node} -> ${neighbor}`);
+          }
+        }
+      }
+      recursionStack.delete(node); 
+    };
+
+    for (const key of Object.keys(dependencyGraph)) {
+      if (!visited.has(key)) detectCycle(key);
+    }
+
+    if (cycles.length > 0) {
+      grammarError = true;
+      errorCount += cycles.length;
+      console.warn(`Warning: Circular dependencies detected! This may cause infinite loops during generation:`);
+      cycles.forEach(cycle => console.warn(`  - ${cycle}`));
+    }
+
+    if (!grammarError) {
+      console.log("Grammar test passed! No missing references or circular dependencies found.");
     } else {
-      fragments[f][nextWord]++;
+      console.warn(`Grammar test finished with ${errorCount} error(s)/warning(s).`);
     }
+
+    return this; 
   }
 
-  // Calculate normalized probabilities
-  const mProbs = {};
-  for (let f of Object.keys(fragments)) {
-    const keys = Object.keys(fragments[f]);
-    mProbs[f] = { probs: [], grams: keys };
+  /**
+   * Parses raw text, evaluates embedded grammar tags, and resolves variable assignments.
+   * @param {string} rawText - The text string containing Aventura syntax.
+   * @param {Object} context - The memory object for storing/retrieving dynamic variables.
+   * @param {number} depth - Current recursion depth to prevent infinite loops.
+   */
+  expandText(rawText, context = {}, depth = 0) {
+    if (!this.grammar || Object.keys(this.grammar).length === 0) return rawText;
 
-    let sum = 0;
-    for (let i = 0; i < keys.length; i++) {
-      sum += fragments[f][keys[i]];
+    const parsedState = parseAventuraRule(rawText);
+    if (parsedState.isError) return rawText;
+
+    let finalOutput = '';
+    
+    for (const token of parsedState.result) {
+      if (token.type === 'terminal') {
+        finalOutput += token.value;
+      } else if (token.type === 'dynamic-rule') {
+        context[token.variableName] = context[token.variableName] || {};
+        for (const assign of token.assignments) {
+          context[token.variableName][assign.key] = this.expandGrammar(assign.rule, context, assign.isDestructive, depth + 1);
+        }
+      } else if (token.type === 'non-terminal') {
+        let expanded = this.expandGrammar(token.value, context, false, depth + 1);
+        if (token.transforms.length > 0) {
+          expanded = applyTransforms(expanded, token.transforms);
+        }
+        finalOutput += expanded;
+      }
     }
-    for (let i = 0; i < keys.length; i++) {
-      mProbs[f].probs[i] = fragments[f][keys[i]] / sum;
-    }
+    return finalOutput;
   }
 
-  return mProbs;
+  /**
+   * Resolves a specific grammar symbol by randomly selecting a valid rule.
+   * @param {string} startSymbol - The key to look up in the grammar dictionary.
+   * @param {Object} context - The memory object for dynamic variables.
+   * @param {boolean} isDestructive - If true, removes the selected rule from the grammar.
+   * @param {number} depth - Current recursion depth.
+   */
+  expandGrammar(startSymbol, context = {}, isDestructive = false, depth = 0) {
+    if (depth > 100) {
+      console.warn(`Aventura: Maximum recursion depth exceeded at <${startSymbol}>.`);
+      return `[MAX_DEPTH_EXCEEDED: ${startSymbol}]`;
+    }
+
+    // Attempt to retrieve a saved variable from memory context
+    if (startSymbol.includes('.')) {
+      const [varName, keyName] = startSymbol.split('.');
+      if (context[varName] && context[varName][keyName]) {
+        return context[varName][keyName]; 
+      }
+    }
+
+    const rules = this.grammar[startSymbol];
+    if (!rules || rules.length === 0) return `<${startSymbol}>`; 
+
+    const pick = getRandomPick(rules);
+    const randomRule = pick.element;
+    
+    if (isDestructive) {
+      rules.splice(pick.index, 1); 
+      if (rules.prob) rules.prob.splice(pick.index, 1); 
+    }
+
+    return this.expandText(randomRule, context, depth);
+  }
 }
 
-// src/StoryEngine.js
+/**
+ * MarkovEngine
+ * Handles the generation, storage, and traversal of n-gram Markov Chains 
+ * for procedural text generation.
+ */
+class MarkovEngine {
+  constructor() {
+    this.markov = {};
+    this.markovSeparator = " ";
+  }
 
+  /**
+   * Fetches a text file and builds a new Markov model.
+   * @param {string} filename - The URL path to the source text file.
+   * @param {number} ngram - The n-gram depth for the chain (default: 1).
+   * @param {Function} saveJSONCallback - Optional callback to save the generated model.
+   */
+  async buildModel(filename, ngram = 1, saveJSONCallback = null) {
+    const response = await fetch(filename);
+    const text = await response.text();
+    const model = this._buildMarkovModel(text, ngram, this.markovSeparator);
+    
+    if (saveJSONCallback) {
+      const filenameParts = filename.split('/');
+      const cleanName = filenameParts[filenameParts.length - 1].split('.')[0];
+      saveJSONCallback(model, `${cleanName}_markovModel_${ngram}N.json`);
+    }
+    
+    return model;
+  }
+
+  /**
+   * Internal parser that calculates token frequencies and normalizes probabilities.
+   */
+  _buildMarkovModel(text, ngram = 1, separator = " ") {
+    // Clean and normalize the source text
+    let cleanedText = text.replace(/([,:.;])/g, " $1").replace(/[()\¿¡!?”“—-]/g, "").toLowerCase();
+    
+    const words = cleanedText.split(separator);
+    const fragments = {};
+
+    // Build the frequency map
+    for (let i = 0; i < words.length - ngram; i++) {
+      let f = "";
+      for (let j = 0; j < ngram; j++) {
+        f += j === 0 ? words[i + j] : " " + words[i + j];
+      }
+
+      if (fragments[f] === undefined) { fragments[f] = {}; }
+      const nextWord = words[i + ngram];
+
+      if (fragments[f][nextWord] === undefined) {
+        fragments[f][nextWord] = 1;
+      } else {
+        fragments[f][nextWord]++;
+      }
+    }
+
+    // Calculate normalized probabilities
+    const mProbs = {};
+    for (let f of Object.keys(fragments)) {
+      const keys = Object.keys(fragments[f]);
+      mProbs[f] = { probs: [], grams: keys };
+
+      let sum = 0;
+      for (let i = 0; i < keys.length; i++) {
+        sum += fragments[f][keys[i]];
+      }
+      for (let i = 0; i < keys.length; i++) {
+        mProbs[f].probs[i] = fragments[f][keys[i]] / sum;
+      }
+    }
+
+    return mProbs;
+  }
+
+  /**
+   * Loads a pre-compiled JSON Markov model into the engine.
+   */
+  setModel(model) {
+    this.markov = model;
+    return this;
+  }
+
+  /**
+   * Generates a console-based ASCII bar chart mapping the distribution 
+   * of probabilities within the currently loaded model.
+   */
+  testDistribution() {
+    if (!this.markov || Object.keys(this.markov).length === 0) {
+      console.error("No Markov model loaded to test.");
+      return this;
+    }
+
+    const distributions = {};
+    const values = Object.values(this.markov);
+
+    for (const v of values) {
+      for (const p of v.probs) {
+        const aprox = (Math.round(p / 0.05) * 0.05).toFixed(2);
+        if (distributions[aprox] === undefined) distributions[aprox] = 1;
+        else distributions[aprox]++;
+      }
+    }
+
+    console.log("------------------------------------ DIST ------------------------------------");
+    const max = Math.max(...Object.values(distributions));
+    const sorted = Object.entries(distributions).sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]));
+    
+    for (const [aprox, count] of sorted) {
+      const bar = "|".repeat(Math.ceil((count * 100) / max));
+      console.log(`${aprox}... ${bar}`);
+    }
+    console.log("------------------------------------ DIST ------------------------------------");
+
+    return this;
+  }
+
+  /**
+   * Traverses the Markov model to generate a procedural text chain.
+   * @param {number} chainLength - The total number of words to generate.
+   * @param {string} seed - The starting n-gram.
+   * @param {number} newLineProbability - Chance (0-1) to inject a line break after a period.
+   */
+  generateChain(chainLength, seed, newLineProbability = 0.1) {
+    if (!this.markov || Object.keys(this.markov).length === 0) return "";
+
+    let result = (seed === undefined || this.markov[seed] === undefined) ? this._randomMarkovWord() : seed;
+    let currentGram = result;
+  
+    for (let chain = 0; chain < chainLength - 1; chain++) {
+      let nextWord = this._getNextMarkov(this.markov[currentGram]);
+      
+      if (nextWord === undefined) {
+        // Fallback: Pick a random node if the chain hits a dead end
+        nextWord = this._getNextMarkov(this.markov[this._randomMarkovWord()]);
+      }
+      
+      let tempList = currentGram.split(this.markovSeparator);
+      tempList.push(nextWord);
+      tempList = tempList.slice(1).join(this.markovSeparator);
+      currentGram = tempList;
+      
+      result += `${this.markovSeparator}${nextWord}`;
+    }
+  
+    return this._formatMarkov(result, newLineProbability);
+  }
+
+  _randomMarkovWord() {
+    const keys = Object.keys(this.markov);
+    const choice = Math.floor(Math.random() * keys.length);
+    return keys[choice];
+  }
+
+  _getNextMarkov(data) {
+    if (data === undefined) return undefined;
+    const rnd = Math.random();
+    let count = 0;
+    for (let i = 0; i < data.probs.length; i++) {
+      if (count <= rnd && rnd < count + data.probs[i]) {
+        return data.grams[i];
+      }
+      count += data.probs[i];
+    }
+    return data.grams[data.grams.length - 1]; 
+  }
+
+  _formatMarkov(str, newLineProbability) {
+    let formatted = str.replace(/ ([,:.;])/g, "$1");
+    formatted = formatted.replaceAll(/([.]) ([\wáéíóú])/ig, (match, c1, c2) => {
+      if (Math.random() < newLineProbability) return `.\n${c2.toUpperCase()}`;
+      return `. ${c2.toUpperCase()}`;
+    });
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }
+}
+
+/**
+ * StoryEngine
+ * A headless state machine that manages scene transitions, memory context,
+ * and data normalization for interactive narratives. It broadcasts state 
+ * changes to the UI layer without interacting with the DOM.
+ */
 class StoryEngine {
   constructor(grammarEngine) {
     this.grammar = grammarEngine;
     this.scenes = {};
     this.currentScene = null;
+    this.previousScene = null;
     this.onSceneChange = null;
 
+    // Persists generative text variables across the lifespan of a single playthrough
     this.storyContext = {};
   }
 
+  /**
+   * Wipes the generative memory clean for a new playthrough.
+   */
   resetContext() {
     this.storyContext = {};
   }
 
+  /**
+   * Schema Sanitization Gate.
+   * Ensures the incoming JSON strictly adheres to the Aventura V3 English schema.
+   * Strips out unrecognized keys and undefined values to optimize memory.
+   */
   _normalizeScenes(rawScenes) {
     const normalized = {};
     for (const [key, scene] of Object.entries(rawScenes)) {
       normalized[key] = {
         key: key,
-        text: scene.text !== undefined ? scene.text : scene.texto,
-        scene: scene.scene !== undefined ? scene.scene : scene.escena,
-        image: scene.image !== undefined ? scene.image : scene.imagen,
-        deadEnd: scene.deadEnd !== undefined ? scene.deadEnd : scene.sinSalida,
+        text: scene.text,
+        scene: scene.scene,
+        image: scene.image,
+        deadEnd: scene.deadEnd,
         plop: scene.plop,
-        title: scene.title !== undefined ? scene.title : scene.titulo,
-        igrama: scene.igrama,
+        title: scene.title,
         
-        // Normalize areas
+        // Extended module configurations
+        igrama: scene.igrama,
+        viz: scene.viz,             
+        dataScene: scene.dataScene, 
+        meta: scene.meta,           
+
+        // Hit-area geometry and navigation
         areas: scene.areas ? scene.areas.map(a => ({
           x: a.x, y: a.y, w: a.w, h: a.h,
           btn: a.btn,
-          text: a.text !== undefined ? a.text : a.texto,
-          scene: a.scene !== undefined ? a.scene : a.escena,
+          text: a.text,
+          scene: a.scene,
           tooltip: a.tooltip
         })) : undefined,
         
-        // Normalize options
-        options: (scene.options || scene.opciones) ? (scene.options || scene.opciones).map(o => ({
+        // Standard button options
+        options: scene.options ? scene.options.map(o => ({
           btn: o.btn,
-          text: o.text !== undefined ? o.text : o.texto,
-          scene: o.scene !== undefined ? o.scene : o.escena,
-          image: o.image !== undefined ? o.image : o.imagen
+          text: o.text,
+          scene: o.scene,
+          image: o.image
         })) : undefined
       };
 
-      // Clean up undefined properties to keep the memory footprint small
+      // Strip undefined properties to maintain a minimal memory footprint
       Object.keys(normalized[key]).forEach(k => normalized[key][k] === undefined && delete normalized[key][k]);
     }
     return normalized;
   }
-
+  
+  /**
+   * Ingests, normalizes, and stores the scene graph.
+   */
   setScenes(scenes) {
-    // Normalize at the gate! The rest of the engine only sees English keys now.
     this.scenes = this._normalizeScenes(scenes);
     return this;
   }
 
+  /**
+   * Validates and triggers a transition to a targeted scene.
+   */
   goToScene(sceneId) {
     const scene = this.scenes[sceneId];
     if (!scene) {
@@ -343,8 +682,11 @@ class StoryEngine {
     this._dispatchScene(sceneId, scene);
   }
 
+  /**
+   * Generates a temporary, intermediate scene for branching options 
+   * that contain their own transitional text.
+   */
   playDynamicScene(option) {
-    // Creates a temporary scene on the fly for buttons that have their own text
     const tempScene = {
       text: option.text,
       scene: option.scene,
@@ -353,13 +695,24 @@ class StoryEngine {
     this._dispatchScene(`temp_${Math.random().toString(36).substr(2, 5)}`, tempScene);
   }
 
+  /**
+   * The core state machine tick. Updates history, processes grammar, 
+   * packages the state, and broadcasts to the UI layer.
+   */
   _dispatchScene(sceneId, scene) {
+    if (this.currentScene !== sceneId) {
+      this.previousScene = this.currentScene;
+    }
     this.currentScene = sceneId;
 
-    // Process the generative text using the grammar engine (if attached)
+    // Automatically inject a "Go Back" button for auto-generated collection artifacts
+    if (scene.dataScene && this.previousScene) {
+      scene.options = [{ btn: "<<<", scene: this.previousScene }];
+    }
+
+    // Expand generative tags (e.g. <animal>) against the current playthrough memory
     const parsedText = this.grammar ? this.grammar.expandText(scene.text || '', this.storyContext) : (scene.text || '');
 
-    // Package the strict, normalized state for the UI layer
     const sceneState = {
       id: sceneId,
       rawScene: scene,
@@ -370,12 +723,14 @@ class StoryEngine {
       deadEnd: scene.deadEnd
     };
 
-    // Announce the change to the outside world
     if (this.onSceneChange) {
       this.onSceneChange(sceneState);
     }
   }
 
+  /**
+   * Debugging utility to traverse the normalized scene graph and detect unreachable nodes.
+   */
   testScenes() {
     if (!this.scenes || Object.keys(this.scenes).length === 0) {
       console.error("Aventura Engine: There are no scenes to test.");
@@ -384,7 +739,6 @@ class StoryEngine {
 
     const deadEnds = [];
     
-    // Because of normalization, we only have to check English keys here!
     for (const [key, scene] of Object.entries(this.scenes)) {
       if (scene.options) {
         for (const opt of scene.options) {
@@ -408,8 +762,12 @@ class StoryEngine {
   }
 }
 
-// src/StoryUI.js
-
+/**
+ * StoryUI
+ * The default presentation layer for Aventura. It acts as a "Batteries Included" 
+ * UI that listens to the StoryEngine and dynamically generates the DOM elements, 
+ * CSS styling, SVG interactive areas, and visual transitions.
+ */
 class StoryUI {
   constructor(lang, options, storyEngine) {
     this.lang = lang;
@@ -419,6 +777,10 @@ class StoryUI {
     this.storyPreload = {};
   }
 
+  /**
+   * Initializes the DOM environment, injecting required CSS variables
+   * and establishing the main container for the story elements.
+   */
   init() {
     if (this.options.defaultCSS) this._injectThemeCSS();
 
@@ -433,6 +795,9 @@ class StoryUI {
     }
   }
 
+  /**
+   * Preloads static images into memory to prevent flickering during scene transitions.
+   */
   preloadImages(scenes) {
     for (const key of Object.keys(scenes)) {
       const im = scenes[key].image || scenes[key].imagen;
@@ -443,14 +808,18 @@ class StoryUI {
     }
   }
 
+  /**
+   * The primary render hook. Clears or prepares the container based on the 
+   * scrolling settings, and orchestrates the rendering of media and text.
+   */
   render(sceneState) {
     if (!this.container) return;
 
-    // Handle scrolling vs replacing
+    // Handle single-view replacement vs. scrolling history
     if (!this.options.adventureScroll || sceneState.rawScene.plop) {
       this.container.innerHTML = ''; 
     } else {
-      // Remove interactive elements from previous scenes entirely
+      // Remove interactive elements from previous scenes to prevent retroactive branching
       const prevButtons = this.container.querySelectorAll('.storybutton-container');
       prevButtons.forEach(el => el.remove());
       
@@ -466,14 +835,16 @@ class StoryUI {
     this._renderText(sceneState, storydiv);
   }
 
-async _renderImageAndAreas(sceneState, storydiv) {
-    // 1. Static Image
+  /**
+   * Evaluates the scene state and conditionally delegates rendering to the 
+   * D3 DataEngine, the IgramaEngine, or standard static image handling.
+   */
+  async _renderImageAndAreas(sceneState, storydiv) {
     const imgSrc = sceneState.image;
-    
-    // 2. Igrama Generative Image
     const igramaRule = sceneState.rawScene.igrama;
+    const vizConfig = sceneState.rawScene.viz;
 
-    if (!imgSrc && !igramaRule) return;
+    if (!imgSrc && !igramaRule && !vizConfig) return;
 
     const imgContainer = document.createElement("div");
     imgContainer.className = "storyimage-container";
@@ -481,15 +852,29 @@ async _renderImageAndAreas(sceneState, storydiv) {
 
     let image;
 
-    if (igramaRule && this.engine.grammar.igramaEngine) {
-      // It's an Igrama! We generate it on the fly.
+    // Route 1: D3 Interactive Data Visualization
+    if (vizConfig && this.engine.grammar.dataEngine) {
+      const width = this.options.vizWidth || 600;
+      const height = this.options.vizHeight || 500;
+      
+      const svgNode = this.engine.grammar.dataEngine.renderViz(
+        vizConfig, 
+        width, 
+        height, 
+        (target) => this.engine.goToScene(target) 
+      );
+      
+      if (svgNode) imgContainer.appendChild(svgNode);
+
+    // Route 2: Generative Canvas Drawing (Igrama)
+    } else if (igramaRule && this.engine.grammar.igramaEngine) {
       image = new Image();
       image.className = "storyimage";
       imgContainer.appendChild(image);
       
       const layers = this.engine.grammar.expandIgrama(igramaRule);
       
-      // If there's generative text attached to the image, append it to the parsed text
+      // Append generative attributes to the main text flow
       const extraText = this.engine.grammar.igramaText(layers);
       if (extraText) {
          sceneState.parsedText = extraText + "\n" + sceneState.parsedText;
@@ -498,16 +883,17 @@ async _renderImageAndAreas(sceneState, storydiv) {
       const url = await this.engine.grammar.igramaDataUrl(layers, this.options.igramaFormat);
       image.src = url;
 
+    // Route 3: Standard Static Image
     } else if (imgSrc) {
-      // It's a standard static image
       image = this.storyPreload[imgSrc] ? this.storyPreload[imgSrc].cloneNode() : new Image();
       image.src = imgSrc;
       image.className = "storyimage";
       imgContainer.appendChild(image);
     }
 
-    if (sceneState.areas && sceneState.areas.length > 0) {
-      image.onload = () => {
+    // Attach SVG overlay hitboxes if defined in the scene state
+    if (image && sceneState.areas && sceneState.areas.length > 0) {
+      const attachSVG = () => {
         const svgNS = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(svgNS, "svg");
         svg.setAttribute("viewBox", `0 0 ${image.naturalWidth} ${image.naturalHeight}`);
@@ -549,9 +935,20 @@ async _renderImageAndAreas(sceneState, storydiv) {
         }
         imgContainer.appendChild(svg);
       };
+
+      // Ensure the image has layout dimensions before calculating the SVG coordinate space
+      if (image.complete) {
+        attachSVG();
+      } else {
+        image.onload = attachSVG;
+      }
     }
   }
 
+  /**
+   * Processes the normalized text. Handles HTML evaluation security 
+   * and orchestrates the asynchronous typewriter effect.
+   */
   async _renderText(sceneState, storydiv) {
     const paragraph = document.createElement("p");
     paragraph.className = "storyp";
@@ -561,6 +958,7 @@ async _renderImageAndAreas(sceneState, storydiv) {
       this.container.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
     
+    // Typewriter effect handling
     if (this.options.typewriterSpeed > 0) {
       let i = 0;
       let lastTime = 0;
@@ -573,7 +971,7 @@ async _renderImageAndAreas(sceneState, storydiv) {
             
             const currentText = sceneState.parsedText.substring(0, i);
             
-            // SECURITY: Safely inject text or allow HTML based on evalTags
+            // Text injection logic based on security settings
             if (this.options.evalTags) {
               paragraph.innerHTML = currentText.replace(/\n/g, '<br>');
             } else {
@@ -588,7 +986,7 @@ async _renderImageAndAreas(sceneState, storydiv) {
         requestAnimationFrame(typeFrame);
       });
     } else {
-      // Instant display
+      // Instant text rendering
       if (this.options.evalTags) {
         paragraph.innerHTML = sceneState.parsedText.replace(/\n/g, '<br>');
       } else {
@@ -599,6 +997,10 @@ async _renderImageAndAreas(sceneState, storydiv) {
     this._renderButtons(sceneState, storydiv);
   }
 
+  /**
+   * Generates interactive buttons for scene traversal. 
+   * Handles intermediate dynamic scenes and dead ends.
+   */
   _renderButtons(sceneState, storydiv) {
     const btns_container = document.createElement("div");
     btns_container.className = "storybutton-container";
@@ -636,24 +1038,56 @@ async _renderImageAndAreas(sceneState, storydiv) {
     }
   }
 
+  /**
+   * Dynamically constructs and applies the CSS variables to the document head 
+   * based on the Aventura initialization options.
+   */
   _injectThemeCSS() {
     if (document.getElementById('aventura-theme-styles')) return;
 
     const t = this.options.theme;
     const style = document.createElement('style');
     style.id = 'aventura-theme-styles';
+    
     style.innerHTML = `
       :root {
-        --av-bg: ${t.background}; --av-text: ${t.text}; --av-font: ${t.fontFamily};
-        --av-accent-bg: ${t.accentBackground}; --av-accent-text: ${t.accentText};
-        --av-btn-border: ${t.buttonBorder}; --av-radius: ${t.borderRadius};
+        --av-bg: ${t.background}; 
+        --av-text: ${t.text}; 
+        --av-font: ${t.fontFamily};
+        --av-accent-bg: ${t.accentBackground}; 
+        --av-accent-text: ${t.accentText};
+        --av-btn-border: ${t.buttonBorder}; 
+        --av-radius: ${t.borderRadius};
         --av-container-border: ${t.containerBorder};
+        
+        --av-btn-bg: ${t.buttonBg || t.background};
+        --av-btn-text: ${t.buttonText || t.text};
+        --av-btn-hover-bg: ${t.buttonHoverBg || t.accentBackground};
+        --av-btn-hover-text: ${t.buttonHoverText || t.accentText};
       }
       .storygeneraldiv { box-sizing: border-box; margin: auto; max-width: 600px; font-family: var(--av-font); background: var(--av-bg); color: var(--av-text); }
       .storydiv { box-sizing: border-box; width: 100%; display: flex; padding: 1em; flex-direction: column; border: var(--av-container-border); }
-      .storyp { font-size: 1.1em; line-height: 1.5; min-height: 1.5em; white-space: pre-wrap; }
-      .storybutton { background: var(--av-bg); color: var(--av-text); border: var(--av-btn-border); border-radius: var(--av-radius); margin: 0px 1em 1em 0px; padding: 0.5em 1em; font-size: 1em; font-family: var(--av-font); cursor: pointer; transition: all 0.2s ease; }
-      .storybutton:hover { background: var(--av-accent-bg); color: var(--av-accent-text); }
+      .storyp { font-size: 1.1em; line-height: 1.5; min-height: 1.5em; white-space: pre-wrap; margin-bottom: 1.5em; }
+      
+      .storybutton { 
+        background: var(--av-btn-bg); 
+        color: var(--av-btn-text); 
+        border: var(--av-btn-border); 
+        border-radius: var(--av-radius); 
+        margin: 0px 0.5em 0.5em 0px; 
+        padding: 0.6em 1.2em; 
+        font-size: 1em; 
+        font-family: var(--av-font); 
+        cursor: pointer; 
+        transition: all 0.2s ease; 
+      }
+      
+      .storybutton:hover { 
+        background: var(--av-btn-hover-bg); 
+        color: var(--av-btn-hover-text);
+        opacity: 0.9; 
+      }
+      
       .storyimage-container { position: relative; width: 100%; margin: 1em auto; }
       .storyimage { width: 100%; display: block; border-radius: var(--av-radius); }
       .story-svg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
@@ -666,52 +1100,72 @@ async _renderImageAndAreas(sceneState, storydiv) {
   }
 }
 
+/**
+ * IgramaEngine
+ * A headless rendering engine for generative images (Igramas).
+ * Processes context-free image grammars to produce composite HTML5 Canvases,
+ * vector splines, and animated GIFs (via MiniGif).
+ */
 class IgramaEngine {
   constructor(grammarEngine) {
-    this.textGrammarEngine = grammarEngine; // Reference to text engine if we need shared logic
+    this.textGrammarEngine = grammarEngine; 
     this.igrama = null;
+    
+    // Memory cache to prevent redundant fetching of external image assets
     this.imgsMemo = {};
     this.minigifOptions = {};
   }
 
+  /**
+   * Ingests the Igrama JSON configuration.
+   */
   setIgrama(igramaObj) {
     this.igrama = igramaObj;
     return this;
   }
 
-  // --- 1. GRAMMAR EXPANSION ---
+  // ==========================================
+  // 1. GRAMMAR EXPANSION & PARSING
+  // ==========================================
 
+  /**
+   * Expands a starting symbol into a fully resolved array of drawing layers.
+   */
   expand(startSymbol) {
     if (!this.igrama || !this.igrama.grammar) return [];
     
-    // 1. Resolve the grammar recursively (simulating the old grammarRuleRecursion)
-    // We can write a simple recursive resolver here since igrama syntax is simpler (just <tags> and | )
     const rawString = this._resolveIgramaGrammar(startSymbol);
     
-    // 2. Split by '|' and decode each drawing layer
+    // Igrama layers are delimited by the '|' character
     return rawString.split('|').map(drawing => this.decodeDrawing(drawing));
   }
 
+  /**
+   * Recursively resolves Igrama tags (e.g., <tag_name>).
+   */
   _resolveIgramaGrammar(symbol, depth = 0) {
     if (depth > 100) return "";
     
-    // If it's a tag, look it up
     let lookup = symbol;
     if (symbol.startsWith('<') && symbol.endsWith('>')) {
       lookup = symbol.substring(1, symbol.length - 1);
     }
 
     const rules = this.igrama.grammar[lookup];
-    if (!rules || rules.length === 0) return symbol; // Not found, return raw
+    if (!rules || rules.length === 0) return symbol; 
 
     const pick = getRandomPick(rules).element;
 
-    // Regex to find <tags> inside the picked rule and resolve them
+    // Recursively expand nested tags within the chosen rule
     return pick.replace(/<([^>]+)>/g, (match, innerTag) => {
       return this._resolveIgramaGrammar(innerTag, depth + 1);
     });
   }
 
+  /**
+   * Decodes proprietary Igrama syntax into executable layer objects.
+   * Expected format: type%%content%%attribute
+   */
   decodeDrawing(data) {
     if (!data || data === '') return [];
     
@@ -719,6 +1173,8 @@ class IgramaEngine {
     let decoded = { type, attribute };
 
     if (type === 'vector') {
+      // Vector data contains multiple doodles delimited by '**'
+      // Each doodle format: color&weight&x1,y1,x2,y2...
       decoded.content = content.split('**').map(doodle => {
         const [color, weight, v] = doodle.split('&');
         const xy = [];
@@ -733,18 +1189,27 @@ class IgramaEngine {
         return xy;
       });
     } else {
-      decoded.content = content; // Usually a URL for external images
+      // For 'url' types, content is the source path
+      decoded.content = content; 
     }
     return decoded;
   }
 
+  /**
+   * Extracts and reverses parallel text attributes generated alongside the image.
+   */
   getText(layers) {
-    // Extracts the attributes and reverses them as per original logic
     return layers.filter(d => d.attribute).map(d => d.attribute).reverse().join(' ').trim();
   }
 
-  // --- 2. RENDERING ENGINE ---
+  // ==========================================
+  // 2. RENDERING PIPELINE
+  // ==========================================
 
+  /**
+   * Renders the parsed layers to an off-screen Canvas and returns a Base64 Data URL.
+   * Supports 'png' or 'gif' output formats.
+   */
   async getDataUrl(layers, format = 'png') {
     if (!this.igrama || !this.igrama.metadata) return '';
 
@@ -767,15 +1232,16 @@ class IgramaEngine {
     if (format === 'png') {
       dataUrl = canvas.toDataURL('image/png');
     } else if (format === 'gif') {
-      if (typeof MiniGif === 'undefined') { // <-- Removed "window."
+      if (typeof MiniGif === 'undefined') {
         console.error("Aventura: MiniGif library is required to export GIFs.");
       } else {
         const options = Object.assign({ colorResolution: 7, dither: false, delay: 50 }, this.minigifOptions);
-        const gif = new MiniGif(options);   // <-- Removed "window."
+        const gif = new MiniGif(options);   
         
-        gif.addFrame(canvas); // Frame 1
+        // Base Frame
+        gif.addFrame(canvas); 
         
-        // Frame 2 (Wiggle effect)
+        // Wiggle Frame: Applies a slight coordinate displacement for a hand-drawn boil effect
         const layerWiggle = this._getLayerWiggle(layers);
         ctx.fillStyle = this.igrama.metadata.bg || '#FFFFFF';
         ctx.fillRect(0, 0, width, height);
@@ -791,6 +1257,9 @@ class IgramaEngine {
     return dataUrl;
   }
 
+  /**
+   * Iterates through layers and draws images or vector splines onto the target Canvas context.
+   */
   async drawLayers(layers, ctx) {
     for (const [index, layer] of layers.entries()) {
       if (layer.type === 'url' && this.igrama.sections && this.igrama.sections[index]) {
@@ -801,7 +1270,7 @@ class IgramaEngine {
           img.src = layer.content;
           this.imgsMemo[layer.content] = await new Promise(resolve => {
             img.onload = () => resolve(img);
-            img.onerror = () => resolve(img); // Avoid hanging on bad URLs
+            img.onerror = () => resolve(img); // Fail gracefully on bad URLs
           });
         }
         ctx.drawImage(this.imgsMemo[layer.content], x, y, w, h);
@@ -828,6 +1297,9 @@ class IgramaEngine {
     ctx.stroke();
   }
   
+  /**
+   * Expands sparse vector points into a smooth curve using Catmull-Rom spline interpolation.
+   */
   _getSpline(points) {
     let spline = [];
     for (let i = 0; i < points.length - 1; i++) {
@@ -838,7 +1310,6 @@ class IgramaEngine {
       p[3] = i < points.length - 2 ? points[i + 2] : points[points.length -1];
       
       for (let t = 0; t < 1; t += 0.05) {
-        // Catmull-Rom spline interpolation math
         const t2 = t * t;
         const t3 = t2 * t;
         const x = 0.5 * ((2 * p[1][0]) + (-p[0][0] + p[2][0]) * t + (2 * p[0][0] - 5 * p[1][0] + 4 * p[2][0] - p[3][0]) * t2 + (-p[0][0] + 3 * p[1][0] - 3 * p[2][0] + p[3][0]) * t3);
@@ -849,6 +1320,10 @@ class IgramaEngine {
     return spline;
   }
 
+  /**
+   * Clones and slightly perturbs vector coordinates to generate a secondary 
+   * "boil" frame for GIF animation.
+   */
   _getLayerWiggle(layers) {
     const r = 3;
     const layerWiggle = JSON.parse(JSON.stringify(layers));
@@ -878,10 +1353,274 @@ class IgramaEngine {
   }
 }
 
+/**
+ * DataEngine
+ * A headless visualization engine designed for digital humanities and archival navigation.
+ * Inspired by Aby Warburg's Mnemosyne Atlas, it processes tabular data to automatically 
+ * generate interactive, D3-powered SVG visualizations and interconnected story scenes.
+ */
+class DataEngine {
+  constructor(options) {
+    this.options = options;
+    this.data = [];
+    this.metaKeys = [];
+  }
+
+  /**
+   * Ingests archival data and automatically generates individual artifact scenes (`ind_[ID]`).
+   * Injects these generated scenes directly into the StoryEngine's scene graph.
+   */
+  setupDataScenes(scenes, data, metaKeys) {
+    const d3Instance = globalThis.d3 || window.d3;
+    if (!d3Instance) {
+      console.warn("Aventura: D3 library is required to use the Data Engine visualizations.");
+      return scenes;
+    }
+
+    this.data = JSON.parse(JSON.stringify(data));
+    this.metaKeys = metaKeys || [];
+
+    for (const d of this.data) {
+      if (d.ID === undefined) {
+        console.error("Aventura: All data items must contain a unique 'ID' key.");
+        break;
+      }
+      
+      // Construct the individual artifact scene
+      scenes[`ind_${d.ID}`] = {
+        text: d.CONT || '',
+        meta: d.ID, 
+        dataScene: true, // Flags the StoryEngine to dynamically inject a "Go Back" button
+        options: [] 
+      };
+      
+      if (d.IMGURL) scenes[`ind_${d.ID}`].image = d.IMGURL;
+      if (d.URL) scenes[`ind_${d.ID}`].url = d.URL;
+    }
+
+    return scenes;
+  }
+
+  /**
+   * Evaluates comparison rules (e.g., [["Year", ">", 1900]]) to filter 
+   * the dataset dynamically before rendering a visualization.
+   */
+  _filterData(filterRules) {
+    let filtered = this.data;
+    if (!filterRules) return filtered;
+
+    const parseBool = (v) => v === "true" ? true : v === "false" ? false : v;
+
+    for (const f of filterRules) {
+      const [key, comp, val] = f;
+      const target = parseBool(val);
+      
+      if (comp === "=" || comp === "==" || comp === "===") {
+        filtered = filtered.filter(d => parseBool(d[key]) == target);
+      } else if (comp === "<") {
+        filtered = filtered.filter(d => parseBool(d[key]) < target);
+      } else if (comp === ">") {
+        filtered = filtered.filter(d => parseBool(d[key]) > target);
+      }
+    }
+    return filtered;
+  }
+
+  /**
+   * Central router that determines which D3 layout algorithm to execute
+   * based on the scene's `viz` configuration block.
+   */
+  renderViz(vizConfig, width, height, onNavigate) {
+    const filteredData = this._filterData(vizConfig.filter);
+    
+    if (vizConfig.type === 'compare') {
+      return this._compareViz(filteredData, vizConfig.x, vizConfig.y, width, height, onNavigate);
+    } else if (vizConfig.type === 'scatter') {
+      return this._scatterViz(filteredData, vizConfig.x, vizConfig.y, width, height, onNavigate);
+    } else if (vizConfig.type === 'pack') {
+      return this._packViz(filteredData, vizConfig.x, vizConfig.y, width, height, onNavigate);
+    }
+    return null;
+  }
+
+  // ==========================================
+  // D3 SVG VISUALIZATION ALGORITHMS
+  // ==========================================
+
+  /**
+   * Renders a static side-by-side comparison of two specific artifacts.
+   */
+  _compareViz(data, id1, id2, width, height, onNavigate) {
+    const d3 = globalThis.d3 || window.d3;
+    const filtered = [data.find(d => d.ID == id1), data.find(d => d.ID == id2)].filter(Boolean);
+    
+    const svg = d3.create("svg")
+      .attr("viewBox", [0, 0, width, height])
+      .attr("class", "story-svg-viz");
+
+    const w = (width / 2) * 0.8;
+    
+    svg.selectAll("image")
+      .data(filtered)
+      .join("image")
+      .attr("href", d => d.IMGURL)
+      .attr("width", w)
+      .attr("x", (d, i) => (i * (width / 2)) + (width / 4) - (w / 2))
+      .attr("y", height * 0.1)
+      .style("cursor", "pointer")
+      .on("click", (event, d) => onNavigate(`ind_${d.ID}`));
+
+    return svg.node();
+  }
+
+  /**
+   * Maps artifacts onto a Cartesian plane using a force-directed layout 
+   * to resolve coordinate collisions.
+   */
+  _scatterViz(data, vx, vy, width, height, onNavigate) {
+    const d3 = globalThis.d3 || window.d3;
+    const size = this.options.vizImageSize || 50;
+    const margin = {l: 0.2 * width, r: 0.1 * width, t: 0.1 * height, b: 0.1 * height};
+    const wm = width - margin.l - margin.r;
+    const hm = height - margin.t - margin.b;
+
+    const domainX = [...new Set(data.map(d => d[vx]))];
+    const domainY = [...new Set(data.map(d => d[vy]))];
+    
+    const scaleX = d3.scalePoint().domain(domainX).range([0, wm]).padding(0.5).round(true);
+    const scaleY = d3.scalePoint().domain(domainY).range([0, hm]).padding(0.5).round(true);
+
+    // Initialize node starting positions
+    const nodes = data.map(d => ({
+      ...d,
+      x: scaleX(d[vx]) + margin.l,
+      y: scaleY(d[vy]) + margin.t
+    }));
+
+    const svg = d3.create("svg")
+      .attr("viewBox", [0, 0, width, height])
+      .attr("class", "story-svg-viz");
+
+    // Construct categorical axes
+    const axes = svg.append("g").attr("fill", "var(--av-text)").attr("font-size", "14px").attr("text-anchor", "middle");
+    domainX.forEach(d => axes.append("text").attr("x", margin.l + scaleX(d)).attr("y", margin.t + hm + 20).text(d));
+    axes.append("line").attr("x1", margin.l).attr("y1", margin.t + hm).attr("x2", margin.l + wm).attr("y2", margin.t + hm).attr("stroke", "var(--av-text)");
+
+    domainY.forEach(d => axes.append("text").attr("x", margin.l - 10).attr("y", margin.t + scaleY(d)).attr("text-anchor", "end").attr("dominant-baseline", "middle").text(d));
+    axes.append("line").attr("x1", margin.l).attr("y1", margin.t).attr("x2", margin.l).attr("y2", margin.t + hm).attr("stroke", "var(--av-text)");
+
+    // Bind data to interactive SVG image nodes
+    const nodeGroup = svg.append("g")
+      .selectAll("image")
+      .data(nodes)
+      .join("image")
+      .attr("href", d => d.IMGURL)
+      .attr("width", size)
+      .style("cursor", "pointer")
+      .on("click", (event, d) => onNavigate(`ind_${d.ID}`));
+
+    // Live physics simulation tick logic
+    d3.forceSimulation(nodes)
+      .force("charge", d3.forceManyBody().strength(5))
+      .force("collide", d3.forceCollide(size * 0.6))
+      .on("tick", () => {
+        nodeGroup
+          .attr("x", d => d.x - (size/2))
+          .attr("y", d => d.y - (size/2));
+      });
+
+    return svg.node();
+  }
+
+  /**
+   * Implements a hierarchical circle-packing layout. Initializes nodes at the 
+   * canvas center to create an outward burst animation as the physics resolve.
+   */
+  _packViz(data, h1, h2, width, height, onNavigate) {
+    const d3 = globalThis.d3 || window.d3;
+    const size = this.options.vizImageSize || 40;
+    
+    const groups = d3.rollup(data, v => v.length, d => d[h1], d => d[h2]);
+    const root = d3.hierarchy(groups, ([key, value]) => value.size && Array.from(value))
+      .sum(([,value]) => value)
+      .sort((a, b) => b.value - a.value);
+
+    d3.pack().size([width, height]).padding(20)(root);
+
+    // Map the calculated hierarchical leaf coordinates back to the artifact data
+    const nodes = [];
+    for (const f of data) {
+      for (const d of root.leaves()) {
+        if (f[h1] === d.parent.data[0] && f[h2] === d.data[0]) {
+          nodes.push({ 
+            ...f, 
+            targetX: d.x, 
+            targetY: d.y, 
+            x: width / 2, 
+            y: height / 2 
+          });
+        }
+      }
+    }
+
+    const svg = d3.create("svg")
+      .attr("viewBox", [0, 0, width, height])
+      .attr("class", "story-svg-viz");
+
+    // Draw hierarchical bounding circles
+    const scheme = ["rgba(0,0,0,0)", "rgba(0,0,0,0.05)", "rgba(0,0,0,0.1)"];
+    svg.append("g")
+      .selectAll("circle")
+      .data(root.descendants())
+      .join("circle")
+      .attr("cx", d => d.x).attr("cy", d => d.y).attr("r", d => d.r)
+      .attr("fill", d => scheme[d.depth] || scheme[2])
+      .attr("stroke", "var(--av-text)")
+      .attr("stroke-opacity", 0.2);
+
+    // Attach taxonomy labels
+    svg.append("g").attr("fill", "var(--av-text)").attr("font-size", "12px").attr("text-anchor", "middle")
+      .selectAll("text")
+      .data(root.descendants().filter(d => d.depth === 1 || d.depth === 2))
+      .join("text")
+      .attr("x", d => d.x).attr("y", d => d.y - d.r - 5)
+      .text(d => d.data[0]);
+
+    // Bind data to interactive SVG image nodes
+    const nodeGroup = svg.append("g")
+      .selectAll("image")
+      .data(nodes)
+      .join("image")
+      .attr("href", d => d.IMGURL)
+      .attr("width", size)
+      .style("cursor", "pointer")
+      .on("click", (event, d) => onNavigate(`ind_${d.ID}`));
+
+    // Live physics simulation tick logic
+    d3.forceSimulation(nodes)
+      .force("x", d3.forceX(d => d.targetX).strength(0.5))
+      .force("y", d3.forceY(d => d.targetY).strength(0.5))
+      .force("collide", d3.forceCollide(size * 0.6))
+      .on("tick", () => {
+        nodeGroup
+          .attr("x", d => d.x - (size/2))
+          .attr("y", d => d.y - (size/2));
+      });
+
+    return svg.node();
+  }
+}
+
+/**
+ * Aventura Orchestrator
+ * The core entry point for the Aventura V3 framework. Initializes all headless 
+ * engines, manages global configurations, and exposes the unified public API.
+ */
 class Aventura {
   constructor(lang = 'es', options = {}) {
     this.lang = (lang === 'en' || lang === 'es') ? lang : 'en';
-    // Default options including the new theme system
+    
+    // Global framework configuration
     this.options = Object.assign({
       typewriterSpeed: 50,
       defaultCSS: true,
@@ -891,6 +1630,9 @@ class Aventura {
       evalTags: false,
       igramaFormat: "png",
       minigifOptions: {},
+      vizWidth: 600,
+      vizHeight: 500,
+      vizImageSize: 50,
       theme: {
         background: '#ffffff',
         containerBorder: "solid 1px black",
@@ -899,365 +1641,77 @@ class Aventura {
         accentBackground: '#000000',
         accentText: '#ffffff',
         buttonBorder: 'solid 1px black',
-        borderRadius: '0px' // Keep it sharp by default
+        borderRadius: '0px'
       }
     }, options);
 
-    // Core State
-    this.grammar = {};
-    this.markov = {};
-    this.markovSeparator = " ";
-    this.scenes = {};
+    // Initialize Sub-Engines
+    this.grammarEngine = new GrammarEngine();
+    this.markovEngine = new MarkovEngine();
     this.storyEngine = new StoryEngine(this);
     this.igramaEngine = new IgramaEngine(this);
+    this.dataEngine = new DataEngine(this.options);
     
-    // Bilingual API Wrappers - Grammar
-    this.fijarGramatica = this.setGrammar.bind(this);
-    this.expandirGramatica = this.expandGrammar.bind(this);
-    this.probarGramatica = this.testGrammar.bind(this);
+    // Export utility wrappers
+    this.loadJSON = loadJSON;
+
+    // =========================================================
+    // UNIFIED PUBLIC API
+    // =========================================================
+
+    // --- Context-Free Grammar ---
+    this.setGrammar = (g) => { this.grammarEngine.setGrammar(g); return this; };
+    this.expandGrammar = (start, context) => this.grammarEngine.expandGrammar(start, context);
+    this.expandText = (text, context) => this.grammarEngine.expandText(text, context);
+    this.testGrammar = () => { this.grammarEngine.testGrammar(); return this; };
     
-    // Bilingual API Wrappers - Markov
-    this.fijarMarkov = this.setMarkov.bind(this);
-    this.cadenaMarkov = this.markovChain.bind(this);
-    this.probarDistribucion = this.testDistribution.bind(this);
+    // --- Markov Chains ---
+    this.markovModel = (file, n, save) => this.markovEngine.buildModel(file, n, save ? this.saveJSON : null);
+    this.setMarkov = (m) => { this.markovEngine.setModel(m); return this; };
+    this.markovChain = (len, seed, nlProb) => this.markovEngine.generateChain(len, seed, nlProb);
+    this.testDistribution = () => { this.markovEngine.testDistribution(); return this; };
 
-    // Bilingual API Wrappers - Interactive Story
-    this.fijarEscenas = this.setScenes.bind(this);
-    this.iniciarAventura = this.startAdventure.bind(this);
-    this.probarEscenas = this.testScenes.bind(this);
-
-    // Igrama API Wrappers
-    this.setIgrama = (igrama) => {
-      this.igramaEngine.setIgrama(igrama);
-      return this; // <-- This restores the chain!
-    };
+    // --- Generative Images (Igramas) ---
+    this.setIgrama = (i) => { this.igramaEngine.setIgrama(i); return this; };
     this.expandIgrama = (start) => this.igramaEngine.expand(start);
     this.igramaText = (layers) => this.igramaEngine.getText(layers);
     this.igramaDataUrl = (layers, format) => this.igramaEngine.getDataUrl(layers, format || this.options.igramaFormat);
-
+    
+    // Utility to render an Igrama directly to the DOM outside of the story flow
     this.showIgrama = async (layers, format, containerId) => {
       const url = await this.igramaDataUrl(layers, format);
       const img = new Image();
       img.src = url;
-      img.className = 'storyimage'; // Give it default styling
+      img.className = 'storyimage';
       const parent = containerId ? document.getElementById(containerId) : document.body;
       parent.appendChild(img);
     };
 
-    // Export Utilities for the user
-    this.loadJSON = loadJSON;
-  }
-
-  /* CONTEXT FREE GRAMMAR */
-
-  setGrammar(grammarObj) {
-    this.grammar = JSON.parse(JSON.stringify(grammarObj));
-    return this
-  }
-
-  testGrammar() {
-    if (!this.grammar || Object.keys(this.grammar).length === 0) {
-      console.error("There is no grammar to test.");
+    // --- Archival Data Visualization ---
+    this.setDataScenes = (scenes, data, metaKeys) => {
+      const enhancedScenes = this.dataEngine.setupDataScenes(scenes, data, metaKeys);
+      this.storyEngine.setScenes(enhancedScenes);
       return this;
-    }
-
-    this.grammarError = false;
-    let errorCount = 0;
-    
-    // 1. Build an adjacency map of dependencies
-    const dependencyGraph = {};
-
-    for (const [key, rules] of Object.entries(this.grammar)) {
-      if (!Array.isArray(rules)) continue; 
-      dependencyGraph[key] = new Set(); // Using a Set to avoid duplicate checks
-
-      for (const ruleString of rules) {
-        const parsedState = parseAventuraRule(ruleString);
-        if (parsedState.isError) {
-          this.grammarError = true;
-          errorCount++;
-          console.error(`Syntax error in rule "${key}":`, parsedState.error);
-          continue;
-        }
-
-        const deadEnds = [];
-        for (const token of parsedState.result) {
-          if (token.type === 'non-terminal' && !token.value.includes('.')) {
-            if (!this.grammar[token.value]) deadEnds.push(token.value);
-            else dependencyGraph[key].add(token.value); // Add valid dependency to graph
-          } else if (token.type === 'dynamic-rule') {
-            for (const assign of token.assignments) {
-              if (assign.rule.includes('.')) continue;
-              if (!this.grammar[assign.rule]) deadEnds.push(assign.rule);
-              else dependencyGraph[key].add(assign.rule); // Add valid dependency to graph
-            }
-          }
-        }
-
-        if (deadEnds.length > 0) {
-          this.grammarError = true;
-          errorCount++;
-          console.error(`The following rules, referenced in "${key}", do not exist: ${deadEnds.join(", ")}`);
-        }
-      }
-    }
-
-    // 2. Cycle Detection using Depth-First Search
-    const visited = new Set();
-    const recursionStack = new Set();
-    const cycles = [];
-
-    const detectCycle = (node) => {
-      visited.add(node);
-      recursionStack.add(node);
-
-      if (dependencyGraph[node]) {
-        for (const neighbor of dependencyGraph[node]) {
-          if (!visited.has(neighbor)) {
-            detectCycle(neighbor);
-          } else if (recursionStack.has(neighbor)) {
-            // We hit a node that is currently in our stack! That's a cycle.
-            cycles.push(`${node} -> ${neighbor}`);
-          }
-        }
-      }
-      recursionStack.delete(node); // Remove from stack when we finish exploring its branches
     };
 
-    // Run the cycle detector on every key in the graph
-    for (const key of Object.keys(dependencyGraph)) {
-      if (!visited.has(key)) {
-        detectCycle(key);
-      }
-    }
-
-    if (cycles.length > 0) {
-      this.grammarError = true;
-      errorCount += cycles.length;
-      console.warn(`Warning: Circular dependencies detected! This may cause infinite loops during generation:`);
-      cycles.forEach(cycle => console.warn(`  - ${cycle}`));
-    }
-
-    if (!this.grammarError) {
-      console.log("Grammar test passed! No missing references or circular dependencies found.");
-    } else {
-      console.warn(`Grammar test finished with ${errorCount} error(s)/warning(s).`);
-    }
-
-    return this; 
-  }
-
-  expandText(rawText, context = this.storyContext, depth = 0) {
-    // If no grammar is loaded, just return the plain text
-    if (!this.grammar || Object.keys(this.grammar).length === 0) return rawText;
-
-    const parsedState = parseAventuraRule(rawText);
-    if (parsedState.isError) return rawText;
-
-    let finalOutput = '';
+    // --- Interactive Story Orchestration ---
+    this.setScenes = (s) => { this.storyEngine.setScenes(s); return this; };
+    this.testScenes = () => { this.storyEngine.testScenes(); return this; };
     
-    for (const token of parsedState.result) {
-      if (token.type === 'terminal') {
-        
-        finalOutput += token.value;
-      
-      } else if (token.type === 'dynamic-rule') {
-        
-        context[token.variableName] = context[token.variableName] || {};
-        for (const assign of token.assignments) {
-          // Resolve the assignment and lock it into memory
-          context[token.variableName][assign.key] = this.expandGrammar(assign.rule, context, assign.isDestructive, depth + 1);
-        }
+    this.startAdventure = (startSymbol) => {
+      const defaultUI = new StoryUI(this.lang, this.options, this.storyEngine);
+      defaultUI.preloadImages(this.storyEngine.scenes);
+      defaultUI.init();
 
-      } else if (token.type === 'non-terminal') {
-        
-        // Pass the tag back to expandGrammar!
-        let expanded = this.expandGrammar(token.value, context, false, depth + 1);
-        if (token.transforms.length > 0) {
-          expanded = applyTransforms(expanded, token.transforms);
-        }
-        finalOutput += expanded;
+      // Bridge the headless engine's state changes to the UI renderer
+      this.storyEngine.onSceneChange = (sceneState) => {
+        defaultUI.render(sceneState);
+      };
 
-      }
-    }
-    return finalOutput;
-  }
-
-  expandGrammar(startSymbol, context = this.storyContext, isDestructive = false, depth = 0) {
-    if (depth > 100) {
-      console.warn(`Aventura: Maximum recursion depth exceeded at <${startSymbol}>.`);
-      return `[MAX_DEPTH_EXCEEDED: ${startSymbol}]`;
-    }
-
-    // Memory Lookup (e.g., squirrel.attribute)
-    if (startSymbol.includes('.')) {
-      const [varName, keyName] = startSymbol.split('.');
-      if (context[varName] && context[varName][keyName]) {
-        return context[varName][keyName]; // Return the locked-in word
-      }
-    }
-
-    const rules = this.grammar[startSymbol];
-    if (!rules || rules.length === 0) return `<${startSymbol}>`; 
-
-    // Dictionary Lookup & Probability Rolling
-    const pick = getRandomPick(rules);
-    const randomRule = pick.element;
-    
-    if (isDestructive) {
-      rules.splice(pick.index, 1); 
-      if (rules.prob) rules.prob.splice(pick.index, 1); 
-    }
-
-    // ELEGANCE: Instead of duplicating the parsing loop here, 
-    // we simply pass the chosen string back to expandText!
-    return this.expandText(randomRule, context, depth);
-  }
-
-  /* MARKOV */
-
-  async markovModel(filename, ngram = 1, save = false) {
-    const text = await (await fetch(filename)).text();
-    const model = buildMarkovModel(text, ngram, this.markovSeparator);
-    
-    if (save) {
-      const filenameParts = filename.split('/');
-      const cleanName = filenameParts[filenameParts.length - 1].split('.')[0];
-      saveJSON(model, `${cleanName}_markovModel_${ngram}N.json`);
-    }
-    
-    return model;
-  }
-
-  setMarkov(model) {
-    this.markov = model;
-    return this; // Chainable!
-  }
-
-  testDistribution() {
-    if (!this.markov || Object.keys(this.markov).length === 0) {
-      console.error("No Markov model loaded to test.");
+      this.storyEngine.resetContext();
+      this.storyEngine.goToScene(startSymbol);
       return this;
-    }
-
-    const distributions = {};
-    const values = Object.values(this.markov);
-
-    // Count the frequency of each probability value (rounded to nearest 0.05)
-    for (const v of values) {
-      for (const p of v.probs) {
-        const aprox = (Math.round(p / 0.05) * 0.05).toFixed(2);
-        
-        if (distributions[aprox] === undefined) {
-          distributions[aprox] = 1;
-        } else {
-          distributions[aprox]++;
-        }
-      }
-    }
-
-    console.log("------------------------------------ DIST ------------------------------------");
-    const max = Math.max(...Object.values(distributions));
-    
-    // Sort by the probability bucket (0.00, 0.05, 0.10, etc.)
-    const sorted = Object.entries(distributions).sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]));
-    
-    for (const [aprox, count] of sorted) {
-      // Create the ASCII bar chart based on the maximum frequency
-      const bar = "|".repeat(Math.ceil((count * 100) / max));
-      console.log(`${aprox}... ${bar}`);
-    }
-    console.log("------------------------------------ DIST ------------------------------------");
-
-    return this; // Chainable
-  }
-
-  markovChain(chainLength, seed, newLineProbability = 0.1) {
-    if (!this.markov || Object.keys(this.markov).length === 0) return "";
-
-    let result = (seed === undefined || this.markov[seed] === undefined) ? this._randomMarkovWord() : seed;
-    let currentGram = result;
-  
-    for (let chain = 0; chain < chainLength - 1; chain++) {
-      let nextWord = this._getNextMarkov(this.markov[currentGram]);
-      
-      if (nextWord === undefined) {
-        // If we hit a dead end, pick a random word to keep the chain alive
-        nextWord = this._getNextMarkov(this.markov[this._randomMarkovWord()]);
-      }
-      
-      let tempList = currentGram.split(this.markovSeparator);
-      tempList.push(nextWord);
-      tempList = tempList.slice(1).join(this.markovSeparator);
-      currentGram = tempList;
-      
-      result += `${this.markovSeparator}${nextWord}`;
-    }
-  
-    return this._formatMarkov(result, newLineProbability);
-  }
-
-  // --- INTERNAL MARKOV UTILITIES ---
-
-  _randomMarkovWord() {
-    const keys = Object.keys(this.markov);
-    const choice = Math.floor(Math.random() * keys.length);
-    return keys[choice];
-  }
-
-  _getNextMarkov(data) {
-    if (data === undefined) return undefined;
-    const rnd = Math.random();
-    let count = 0;
-    for (let i = 0; i < data.probs.length; i++) {
-      if (count <= rnd && rnd < count + data.probs[i]) {
-        return data.grams[i];
-      }
-      count += data.probs[i];
-    }
-    return data.grams[data.grams.length - 1]; // Fallback
-  }
-
-  _formatMarkov(str, newLineProbability = 0.1) {
-    let formatted = str.replace(/ ([,:.;])/g, "$1");
-    formatted = formatted.replaceAll(/([.]) ([\wáéíóú])/ig, (match, c1, c2) => {
-      const rnd = Math.random();
-      if (rnd < newLineProbability) {
-        return `.\n${c2.toUpperCase()}`;
-      } else {
-        return `. ${c2.toUpperCase()}`;
-      }
-    });
-    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
-  }
-
-  setScenes(scenes) {
-    this.storyEngine.setScenes(scenes);
-    return this; 
-  }
-
-  testScenes() {
-    this.storyEngine.testScenes();
-    return this;
-  }
-
-  startAdventure(startSymbol) {
-    // 1. Create the default UI (Batteries Included)
-    const defaultUI = new StoryUI(this.lang, this.options, this.storyEngine);
-    
-    // 2. Preload images based on the normalized data
-    defaultUI.preloadImages(this.storyEngine.scenes);
-    defaultUI.init();
-
-    // 3. Connect the Engine to the UI
-    this.storyEngine.onSceneChange = (sceneState) => {
-      defaultUI.render(sceneState);
     };
-
-    // 4. Kick off the story
-    this.storyEngine.goToScene(startSymbol);
-    
-    return this;
   }
 }
 

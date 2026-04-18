@@ -1,64 +1,86 @@
-// src/StoryEngine.js
-
+/**
+ * StoryEngine
+ * A headless state machine that manages scene transitions, memory context,
+ * and data normalization for interactive narratives. It broadcasts state 
+ * changes to the UI layer without interacting with the DOM.
+ */
 export default class StoryEngine {
   constructor(grammarEngine) {
     this.grammar = grammarEngine;
     this.scenes = {};
     this.currentScene = null;
+    this.previousScene = null;
     this.onSceneChange = null;
 
+    // Persists generative text variables across the lifespan of a single playthrough
     this.storyContext = {};
-
-    this.previousScene = null;
   }
 
+  /**
+   * Wipes the generative memory clean for a new playthrough.
+   */
   resetContext() {
     this.storyContext = {};
   }
 
+  /**
+   * Schema Sanitization Gate.
+   * Ensures the incoming JSON strictly adheres to the Aventura V3 English schema.
+   * Strips out unrecognized keys and undefined values to optimize memory.
+   */
   _normalizeScenes(rawScenes) {
     const normalized = {};
     for (const [key, scene] of Object.entries(rawScenes)) {
       normalized[key] = {
         key: key,
-        text: scene.text !== undefined ? scene.text : scene.texto,
-        scene: scene.scene !== undefined ? scene.scene : scene.escena,
-        image: scene.image !== undefined ? scene.image : scene.imagen,
-        deadEnd: scene.deadEnd !== undefined ? scene.deadEnd : scene.sinSalida,
+        text: scene.text,
+        scene: scene.scene,
+        image: scene.image,
+        deadEnd: scene.deadEnd,
         plop: scene.plop,
-        title: scene.title !== undefined ? scene.title : scene.titulo,
-        igrama: scene.igrama,
+        title: scene.title,
         
-        // Normalize areas
+        // Extended module configurations
+        igrama: scene.igrama,
+        viz: scene.viz,             
+        dataScene: scene.dataScene, 
+        meta: scene.meta,           
+
+        // Hit-area geometry and navigation
         areas: scene.areas ? scene.areas.map(a => ({
           x: a.x, y: a.y, w: a.w, h: a.h,
           btn: a.btn,
-          text: a.text !== undefined ? a.text : a.texto,
-          scene: a.scene !== undefined ? a.scene : a.escena,
+          text: a.text,
+          scene: a.scene,
           tooltip: a.tooltip
         })) : undefined,
         
-        // Normalize options
-        options: (scene.options || scene.opciones) ? (scene.options || scene.opciones).map(o => ({
+        // Standard button options
+        options: scene.options ? scene.options.map(o => ({
           btn: o.btn,
-          text: o.text !== undefined ? o.text : o.texto,
-          scene: o.scene !== undefined ? o.scene : o.escena,
-          image: o.image !== undefined ? o.image : o.imagen
+          text: o.text,
+          scene: o.scene,
+          image: o.image
         })) : undefined
       };
 
-      // Clean up undefined properties to keep the memory footprint small
+      // Strip undefined properties to maintain a minimal memory footprint
       Object.keys(normalized[key]).forEach(k => normalized[key][k] === undefined && delete normalized[key][k]);
     }
     return normalized;
   }
-
+  
+  /**
+   * Ingests, normalizes, and stores the scene graph.
+   */
   setScenes(scenes) {
-    // Normalize at the gate! The rest of the engine only sees English keys now.
     this.scenes = this._normalizeScenes(scenes);
     return this;
   }
 
+  /**
+   * Validates and triggers a transition to a targeted scene.
+   */
   goToScene(sceneId) {
     const scene = this.scenes[sceneId];
     if (!scene) {
@@ -68,8 +90,11 @@ export default class StoryEngine {
     this._dispatchScene(sceneId, scene);
   }
 
+  /**
+   * Generates a temporary, intermediate scene for branching options 
+   * that contain their own transitional text.
+   */
   playDynamicScene(option) {
-    // Creates a temporary scene on the fly for buttons that have their own text
     const tempScene = {
       text: option.text,
       scene: option.scene,
@@ -78,21 +103,24 @@ export default class StoryEngine {
     this._dispatchScene(`temp_${Math.random().toString(36).substr(2, 5)}`, tempScene);
   }
 
+  /**
+   * The core state machine tick. Updates history, processes grammar, 
+   * packages the state, and broadcasts to the UI layer.
+   */
   _dispatchScene(sceneId, scene) {
     if (this.currentScene !== sceneId) {
       this.previousScene = this.currentScene;
     }
     this.currentScene = sceneId;
 
-    // Handle dynamic "Go Back" button for auto-generated data scenes
+    // Automatically inject a "Go Back" button for auto-generated collection artifacts
     if (scene.dataScene && this.previousScene) {
       scene.options = [{ btn: "<<<", scene: this.previousScene }];
     }
 
-    // Process the generative text using the grammar engine (if attached)
+    // Expand generative tags (e.g. <animal>) against the current playthrough memory
     const parsedText = this.grammar ? this.grammar.expandText(scene.text || '', this.storyContext) : (scene.text || '');
 
-    // Package the strict, normalized state for the UI layer
     const sceneState = {
       id: sceneId,
       rawScene: scene,
@@ -103,12 +131,14 @@ export default class StoryEngine {
       deadEnd: scene.deadEnd
     };
 
-    // Announce the change to the outside world
     if (this.onSceneChange) {
       this.onSceneChange(sceneState);
     }
   }
 
+  /**
+   * Debugging utility to traverse the normalized scene graph and detect unreachable nodes.
+   */
   testScenes() {
     if (!this.scenes || Object.keys(this.scenes).length === 0) {
       console.error("Aventura Engine: There are no scenes to test.");
@@ -117,7 +147,6 @@ export default class StoryEngine {
 
     const deadEnds = [];
     
-    // Because of normalization, we only have to check English keys here!
     for (const [key, scene] of Object.entries(this.scenes)) {
       if (scene.options) {
         for (const opt of scene.options) {

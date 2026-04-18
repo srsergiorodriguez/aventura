@@ -1,51 +1,71 @@
 import { getRandomPick } from './utils.js';
 
+/**
+ * IgramaEngine
+ * A headless rendering engine for generative images (Igramas).
+ * Processes context-free image grammars to produce composite HTML5 Canvases,
+ * vector splines, and animated GIFs (via MiniGif).
+ */
 export default class IgramaEngine {
   constructor(grammarEngine) {
-    this.textGrammarEngine = grammarEngine; // Reference to text engine if we need shared logic
+    this.textGrammarEngine = grammarEngine; 
     this.igrama = null;
+    
+    // Memory cache to prevent redundant fetching of external image assets
     this.imgsMemo = {};
     this.minigifOptions = {};
   }
 
+  /**
+   * Ingests the Igrama JSON configuration.
+   */
   setIgrama(igramaObj) {
     this.igrama = igramaObj;
     return this;
   }
 
-  // --- 1. GRAMMAR EXPANSION ---
+  // ==========================================
+  // 1. GRAMMAR EXPANSION & PARSING
+  // ==========================================
 
+  /**
+   * Expands a starting symbol into a fully resolved array of drawing layers.
+   */
   expand(startSymbol) {
     if (!this.igrama || !this.igrama.grammar) return [];
     
-    // 1. Resolve the grammar recursively (simulating the old grammarRuleRecursion)
-    // We can write a simple recursive resolver here since igrama syntax is simpler (just <tags> and | )
     const rawString = this._resolveIgramaGrammar(startSymbol);
     
-    // 2. Split by '|' and decode each drawing layer
+    // Igrama layers are delimited by the '|' character
     return rawString.split('|').map(drawing => this.decodeDrawing(drawing));
   }
 
+  /**
+   * Recursively resolves Igrama tags (e.g., <tag_name>).
+   */
   _resolveIgramaGrammar(symbol, depth = 0) {
     if (depth > 100) return "";
     
-    // If it's a tag, look it up
     let lookup = symbol;
     if (symbol.startsWith('<') && symbol.endsWith('>')) {
       lookup = symbol.substring(1, symbol.length - 1);
     }
 
     const rules = this.igrama.grammar[lookup];
-    if (!rules || rules.length === 0) return symbol; // Not found, return raw
+    if (!rules || rules.length === 0) return symbol; 
 
     const pick = getRandomPick(rules).element;
 
-    // Regex to find <tags> inside the picked rule and resolve them
+    // Recursively expand nested tags within the chosen rule
     return pick.replace(/<([^>]+)>/g, (match, innerTag) => {
       return this._resolveIgramaGrammar(innerTag, depth + 1);
     });
   }
 
+  /**
+   * Decodes proprietary Igrama syntax into executable layer objects.
+   * Expected format: type%%content%%attribute
+   */
   decodeDrawing(data) {
     if (!data || data === '') return [];
     
@@ -53,6 +73,8 @@ export default class IgramaEngine {
     let decoded = { type, attribute };
 
     if (type === 'vector') {
+      // Vector data contains multiple doodles delimited by '**'
+      // Each doodle format: color&weight&x1,y1,x2,y2...
       decoded.content = content.split('**').map(doodle => {
         const [color, weight, v] = doodle.split('&');
         const xy = [];
@@ -67,18 +89,27 @@ export default class IgramaEngine {
         return xy;
       });
     } else {
-      decoded.content = content; // Usually a URL for external images
+      // For 'url' types, content is the source path
+      decoded.content = content; 
     }
     return decoded;
   }
 
+  /**
+   * Extracts and reverses parallel text attributes generated alongside the image.
+   */
   getText(layers) {
-    // Extracts the attributes and reverses them as per original logic
     return layers.filter(d => d.attribute).map(d => d.attribute).reverse().join(' ').trim();
   }
 
-  // --- 2. RENDERING ENGINE ---
+  // ==========================================
+  // 2. RENDERING PIPELINE
+  // ==========================================
 
+  /**
+   * Renders the parsed layers to an off-screen Canvas and returns a Base64 Data URL.
+   * Supports 'png' or 'gif' output formats.
+   */
   async getDataUrl(layers, format = 'png') {
     if (!this.igrama || !this.igrama.metadata) return '';
 
@@ -101,15 +132,16 @@ export default class IgramaEngine {
     if (format === 'png') {
       dataUrl = canvas.toDataURL('image/png');
     } else if (format === 'gif') {
-      if (typeof MiniGif === 'undefined') { // <-- Removed "window."
+      if (typeof MiniGif === 'undefined') {
         console.error("Aventura: MiniGif library is required to export GIFs.");
       } else {
         const options = Object.assign({ colorResolution: 7, dither: false, delay: 50 }, this.minigifOptions);
-        const gif = new MiniGif(options);   // <-- Removed "window."
+        const gif = new MiniGif(options);   
         
-        gif.addFrame(canvas); // Frame 1
+        // Base Frame
+        gif.addFrame(canvas); 
         
-        // Frame 2 (Wiggle effect)
+        // Wiggle Frame: Applies a slight coordinate displacement for a hand-drawn boil effect
         const layerWiggle = this._getLayerWiggle(layers);
         ctx.fillStyle = this.igrama.metadata.bg || '#FFFFFF';
         ctx.fillRect(0, 0, width, height);
@@ -125,6 +157,9 @@ export default class IgramaEngine {
     return dataUrl;
   }
 
+  /**
+   * Iterates through layers and draws images or vector splines onto the target Canvas context.
+   */
   async drawLayers(layers, ctx) {
     for (const [index, layer] of layers.entries()) {
       if (layer.type === 'url' && this.igrama.sections && this.igrama.sections[index]) {
@@ -135,7 +170,7 @@ export default class IgramaEngine {
           img.src = layer.content;
           this.imgsMemo[layer.content] = await new Promise(resolve => {
             img.onload = () => resolve(img);
-            img.onerror = () => resolve(img); // Avoid hanging on bad URLs
+            img.onerror = () => resolve(img); // Fail gracefully on bad URLs
           });
         }
         ctx.drawImage(this.imgsMemo[layer.content], x, y, w, h);
@@ -162,6 +197,9 @@ export default class IgramaEngine {
     ctx.stroke();
   }
   
+  /**
+   * Expands sparse vector points into a smooth curve using Catmull-Rom spline interpolation.
+   */
   _getSpline(points) {
     let spline = [];
     for (let i = 0; i < points.length - 1; i++) {
@@ -172,7 +210,6 @@ export default class IgramaEngine {
       p[3] = i < points.length - 2 ? points[i + 2] : points[points.length -1];
       
       for (let t = 0; t < 1; t += 0.05) {
-        // Catmull-Rom spline interpolation math
         const t2 = t * t;
         const t3 = t2 * t;
         const x = 0.5 * ((2 * p[1][0]) + (-p[0][0] + p[2][0]) * t + (2 * p[0][0] - 5 * p[1][0] + 4 * p[2][0] - p[3][0]) * t2 + (-p[0][0] + 3 * p[1][0] - 3 * p[2][0] + p[3][0]) * t3);
@@ -183,6 +220,10 @@ export default class IgramaEngine {
     return spline;
   }
 
+  /**
+   * Clones and slightly perturbs vector coordinates to generate a secondary 
+   * "boil" frame for GIF animation.
+   */
   _getLayerWiggle(layers) {
     const r = 3;
     const layerWiggle = JSON.parse(JSON.stringify(layers));

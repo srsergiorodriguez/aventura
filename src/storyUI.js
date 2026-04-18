@@ -1,5 +1,9 @@
-// src/StoryUI.js
-
+/**
+ * StoryUI
+ * The default presentation layer for Aventura. It acts as a "Batteries Included" 
+ * UI that listens to the StoryEngine and dynamically generates the DOM elements, 
+ * CSS styling, SVG interactive areas, and visual transitions.
+ */
 export default class StoryUI {
   constructor(lang, options, storyEngine) {
     this.lang = lang;
@@ -9,6 +13,10 @@ export default class StoryUI {
     this.storyPreload = {};
   }
 
+  /**
+   * Initializes the DOM environment, injecting required CSS variables
+   * and establishing the main container for the story elements.
+   */
   init() {
     if (this.options.defaultCSS) this._injectThemeCSS();
 
@@ -23,6 +31,9 @@ export default class StoryUI {
     }
   }
 
+  /**
+   * Preloads static images into memory to prevent flickering during scene transitions.
+   */
   preloadImages(scenes) {
     for (const key of Object.keys(scenes)) {
       const im = scenes[key].image || scenes[key].imagen;
@@ -33,14 +44,18 @@ export default class StoryUI {
     }
   }
 
+  /**
+   * The primary render hook. Clears or prepares the container based on the 
+   * scrolling settings, and orchestrates the rendering of media and text.
+   */
   render(sceneState) {
     if (!this.container) return;
 
-    // Handle scrolling vs replacing
+    // Handle single-view replacement vs. scrolling history
     if (!this.options.adventureScroll || sceneState.rawScene.plop) {
       this.container.innerHTML = ''; 
     } else {
-      // Remove interactive elements from previous scenes entirely
+      // Remove interactive elements from previous scenes to prevent retroactive branching
       const prevButtons = this.container.querySelectorAll('.storybutton-container');
       prevButtons.forEach(el => el.remove());
       
@@ -56,14 +71,16 @@ export default class StoryUI {
     this._renderText(sceneState, storydiv);
   }
 
-async _renderImageAndAreas(sceneState, storydiv) {
-    // 1. Static Image
+  /**
+   * Evaluates the scene state and conditionally delegates rendering to the 
+   * D3 DataEngine, the IgramaEngine, or standard static image handling.
+   */
+  async _renderImageAndAreas(sceneState, storydiv) {
     const imgSrc = sceneState.image;
-    
-    // 2. Igrama Generative Image
     const igramaRule = sceneState.rawScene.igrama;
+    const vizConfig = sceneState.rawScene.viz;
 
-    if (!imgSrc && !igramaRule) return;
+    if (!imgSrc && !igramaRule && !vizConfig) return;
 
     const imgContainer = document.createElement("div");
     imgContainer.className = "storyimage-container";
@@ -71,15 +88,29 @@ async _renderImageAndAreas(sceneState, storydiv) {
 
     let image;
 
-    if (igramaRule && this.engine.grammar.igramaEngine) {
-      // It's an Igrama! We generate it on the fly.
+    // Route 1: D3 Interactive Data Visualization
+    if (vizConfig && this.engine.grammar.dataEngine) {
+      const width = this.options.vizWidth || 600;
+      const height = this.options.vizHeight || 500;
+      
+      const svgNode = this.engine.grammar.dataEngine.renderViz(
+        vizConfig, 
+        width, 
+        height, 
+        (target) => this.engine.goToScene(target) 
+      );
+      
+      if (svgNode) imgContainer.appendChild(svgNode);
+
+    // Route 2: Generative Canvas Drawing (Igrama)
+    } else if (igramaRule && this.engine.grammar.igramaEngine) {
       image = new Image();
       image.className = "storyimage";
       imgContainer.appendChild(image);
       
       const layers = this.engine.grammar.expandIgrama(igramaRule);
       
-      // If there's generative text attached to the image, append it to the parsed text
+      // Append generative attributes to the main text flow
       const extraText = this.engine.grammar.igramaText(layers);
       if (extraText) {
          sceneState.parsedText = extraText + "\n" + sceneState.parsedText;
@@ -88,16 +119,17 @@ async _renderImageAndAreas(sceneState, storydiv) {
       const url = await this.engine.grammar.igramaDataUrl(layers, this.options.igramaFormat);
       image.src = url;
 
+    // Route 3: Standard Static Image
     } else if (imgSrc) {
-      // It's a standard static image
       image = this.storyPreload[imgSrc] ? this.storyPreload[imgSrc].cloneNode() : new Image();
       image.src = imgSrc;
       image.className = "storyimage";
       imgContainer.appendChild(image);
     }
 
-    if (sceneState.areas && sceneState.areas.length > 0) {
-      image.onload = () => {
+    // Attach SVG overlay hitboxes if defined in the scene state
+    if (image && sceneState.areas && sceneState.areas.length > 0) {
+      const attachSVG = () => {
         const svgNS = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(svgNS, "svg");
         svg.setAttribute("viewBox", `0 0 ${image.naturalWidth} ${image.naturalHeight}`);
@@ -139,9 +171,20 @@ async _renderImageAndAreas(sceneState, storydiv) {
         }
         imgContainer.appendChild(svg);
       };
+
+      // Ensure the image has layout dimensions before calculating the SVG coordinate space
+      if (image.complete) {
+        attachSVG();
+      } else {
+        image.onload = attachSVG;
+      }
     }
   }
 
+  /**
+   * Processes the normalized text. Handles HTML evaluation security 
+   * and orchestrates the asynchronous typewriter effect.
+   */
   async _renderText(sceneState, storydiv) {
     const paragraph = document.createElement("p");
     paragraph.className = "storyp";
@@ -151,6 +194,7 @@ async _renderImageAndAreas(sceneState, storydiv) {
       this.container.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
     
+    // Typewriter effect handling
     if (this.options.typewriterSpeed > 0) {
       let i = 0;
       let lastTime = 0;
@@ -163,7 +207,7 @@ async _renderImageAndAreas(sceneState, storydiv) {
             
             const currentText = sceneState.parsedText.substring(0, i);
             
-            // SECURITY: Safely inject text or allow HTML based on evalTags
+            // Text injection logic based on security settings
             if (this.options.evalTags) {
               paragraph.innerHTML = currentText.replace(/\n/g, '<br>');
             } else {
@@ -178,7 +222,7 @@ async _renderImageAndAreas(sceneState, storydiv) {
         requestAnimationFrame(typeFrame);
       });
     } else {
-      // Instant display
+      // Instant text rendering
       if (this.options.evalTags) {
         paragraph.innerHTML = sceneState.parsedText.replace(/\n/g, '<br>');
       } else {
@@ -189,6 +233,10 @@ async _renderImageAndAreas(sceneState, storydiv) {
     this._renderButtons(sceneState, storydiv);
   }
 
+  /**
+   * Generates interactive buttons for scene traversal. 
+   * Handles intermediate dynamic scenes and dead ends.
+   */
   _renderButtons(sceneState, storydiv) {
     const btns_container = document.createElement("div");
     btns_container.className = "storybutton-container";
@@ -226,24 +274,56 @@ async _renderImageAndAreas(sceneState, storydiv) {
     }
   }
 
+  /**
+   * Dynamically constructs and applies the CSS variables to the document head 
+   * based on the Aventura initialization options.
+   */
   _injectThemeCSS() {
     if (document.getElementById('aventura-theme-styles')) return;
 
     const t = this.options.theme;
     const style = document.createElement('style');
     style.id = 'aventura-theme-styles';
+    
     style.innerHTML = `
       :root {
-        --av-bg: ${t.background}; --av-text: ${t.text}; --av-font: ${t.fontFamily};
-        --av-accent-bg: ${t.accentBackground}; --av-accent-text: ${t.accentText};
-        --av-btn-border: ${t.buttonBorder}; --av-radius: ${t.borderRadius};
+        --av-bg: ${t.background}; 
+        --av-text: ${t.text}; 
+        --av-font: ${t.fontFamily};
+        --av-accent-bg: ${t.accentBackground}; 
+        --av-accent-text: ${t.accentText};
+        --av-btn-border: ${t.buttonBorder}; 
+        --av-radius: ${t.borderRadius};
         --av-container-border: ${t.containerBorder};
+        
+        --av-btn-bg: ${t.buttonBg || t.background};
+        --av-btn-text: ${t.buttonText || t.text};
+        --av-btn-hover-bg: ${t.buttonHoverBg || t.accentBackground};
+        --av-btn-hover-text: ${t.buttonHoverText || t.accentText};
       }
       .storygeneraldiv { box-sizing: border-box; margin: auto; max-width: 600px; font-family: var(--av-font); background: var(--av-bg); color: var(--av-text); }
       .storydiv { box-sizing: border-box; width: 100%; display: flex; padding: 1em; flex-direction: column; border: var(--av-container-border); }
-      .storyp { font-size: 1.1em; line-height: 1.5; min-height: 1.5em; white-space: pre-wrap; }
-      .storybutton { background: var(--av-bg); color: var(--av-text); border: var(--av-btn-border); border-radius: var(--av-radius); margin: 0px 1em 1em 0px; padding: 0.5em 1em; font-size: 1em; font-family: var(--av-font); cursor: pointer; transition: all 0.2s ease; }
-      .storybutton:hover { background: var(--av-accent-bg); color: var(--av-accent-text); }
+      .storyp { font-size: 1.1em; line-height: 1.5; min-height: 1.5em; white-space: pre-wrap; margin-bottom: 1.5em; }
+      
+      .storybutton { 
+        background: var(--av-btn-bg); 
+        color: var(--av-btn-text); 
+        border: var(--av-btn-border); 
+        border-radius: var(--av-radius); 
+        margin: 0px 0.5em 0.5em 0px; 
+        padding: 0.6em 1.2em; 
+        font-size: 1em; 
+        font-family: var(--av-font); 
+        cursor: pointer; 
+        transition: all 0.2s ease; 
+      }
+      
+      .storybutton:hover { 
+        background: var(--av-btn-hover-bg); 
+        color: var(--av-btn-hover-text);
+        opacity: 0.9; 
+      }
+      
       .storyimage-container { position: relative; width: 100%; margin: 1em auto; }
       .storyimage { width: 100%; display: block; border-radius: var(--av-radius); }
       .story-svg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
