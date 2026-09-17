@@ -235,14 +235,24 @@ export default class StoryUI {
 
   /**
    * Generates interactive buttons for scene traversal. 
-   * Handles intermediate dynamic scenes and dead ends.
+   * Handles intermediate dynamic scenes, dead ends, and dynamic history navigation.
    */
   _renderButtons(sceneState, storydiv) {
     const btns_container = document.createElement("div");
     btns_container.className = "storybutton-container";
     storydiv.appendChild(btns_container);
 
-    if (sceneState.options) {
+    // --- 1. INJECT BACK BUTTON ---
+    if (this.options.backBtn && sceneState.canGoBack) {
+      const backBtn = document.createElement("button");
+      backBtn.className = "storybutton";
+      backBtn.textContent = "<<<";
+      backBtn.addEventListener("click", () => this.engine.goBack());
+      btns_container.appendChild(backBtn);
+    }
+
+    // --- 2. RENDER NORMAL OPTIONS ---
+    if (sceneState.options && sceneState.options.length > 0) {
       for (const opt of sceneState.options) {
         const btn = document.createElement("button");
         btn.className = "storybutton";
@@ -259,14 +269,25 @@ export default class StoryUI {
           }
         });
       }
-    } else if (!sceneState.deadEnd) {
+    } else if (!sceneState.deadEnd && !sceneState.isTerminal) {
+      // Fallback continue button if a scene target is defined without explicit buttons
       const target = sceneState.rawScene.scene || sceneState.rawScene.escena;
-      const btn = document.createElement("button");
-      btn.className = "storybutton";
-      btn.textContent = this.lang === 'en' ? "Continue" : "Continuar";
-      btns_container.appendChild(btn);
-      
-      btn.addEventListener("click", () => this.engine.goToScene(target));
+      if (target) {
+        const btn = document.createElement("button");
+        btn.className = "storybutton";
+        btn.textContent = ">>>";
+        btns_container.appendChild(btn);
+        btn.addEventListener("click", () => this.engine.goToScene(target));
+      }
+    }
+
+    // --- 3. INJECT RESTART BUTTON ---
+    if (this.options.restartBtn && sceneState.isTerminal) {
+      const restartBtn = document.createElement("button");
+      restartBtn.className = "storybutton btn-restart";
+      restartBtn.textContent = "↻";
+      restartBtn.addEventListener("click", () => this.engine.restart());
+      btns_container.appendChild(restartBtn);
     }
 
     if (this.options.adventureSlide) {
@@ -301,9 +322,32 @@ export default class StoryUI {
         --av-btn-hover-bg: ${t.buttonHoverBg || t.accentBackground};
         --av-btn-hover-text: ${t.buttonHoverText || t.accentText};
       }
-      .storygeneraldiv { box-sizing: border-box; margin: auto; max-width: 600px; font-family: var(--av-font); background: var(--av-bg); color: var(--av-text); }
-      .storydiv { box-sizing: border-box; width: 100%; display: flex; padding: 1em; flex-direction: column; border: var(--av-container-border); }
-      .storyp { font-size: 1.1em; line-height: 1.5; min-height: 1.5em; white-space: pre-wrap; margin-bottom: 1.5em; }
+      
+      .storygeneraldiv { 
+        box-sizing: border-box; 
+        margin: auto; 
+        max-width: 600px; 
+        font-family: var(--av-font); 
+        background: var(--av-bg); 
+        color: var(--av-text);
+      }
+      
+      .storydiv { 
+        box-sizing: border-box; 
+        width: 100%; 
+        display: flex; 
+        padding: 1em; 
+        flex-direction: column; 
+        border: var(--av-container-border); 
+      }
+      
+      .storyp { 
+        font-size: 1.1em; 
+        line-height: 1.5; 
+        min-height: 1.5em; 
+        white-space: pre-wrap; 
+        margin-bottom: 1.5em; 
+      }
       
       .storybutton { 
         background: var(--av-btn-bg); 
@@ -314,23 +358,61 @@ export default class StoryUI {
         padding: 0.6em 1.2em; 
         font-size: 1em; 
         font-family: var(--av-font); 
+        font-weight: bold;
         cursor: pointer; 
-        transition: all 0.2s ease; 
+        transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease; 
       }
       
+      /* The tactile pop-out effect */
       .storybutton:hover { 
         background: var(--av-btn-hover-bg); 
         color: var(--av-btn-hover-text);
-        opacity: 0.9; 
+        transform: translate(-2px, -2px);
+        box-shadow: 4px 4px 0px var(--av-accent-bg);
       }
       
-      .storyimage-container { position: relative; width: 100%; margin: 1em auto; }
-      .storyimage { width: 100%; display: block; border-radius: var(--av-radius); }
-      .story-svg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-      .storyimage-area rect { fill: rgba(255,255,255,0.8); stroke: var(--av-text); stroke-width: 2; cursor: pointer; transition: fill 0.2s ease; }
-      .storyimage-area:hover rect { fill: var(--av-accent-bg); }
-      .storyimage-area text { font-family: var(--av-font); fill: var(--av-text); text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
-      .storyimage-area:hover text { fill: var(--av-accent-text); }
+      .storyimage-container { 
+        position: relative; 
+        width: 100%; 
+        margin: 1em auto; 
+        border: 2px solid var(--av-text); /* Hard border on the image */
+      }
+      
+      .storyimage { 
+        width: 100%; 
+        display: block; 
+        border-radius: var(--av-radius); 
+      }
+      
+      .story-svg-overlay { 
+        position: absolute; 
+        top: 0; left: 0; width: 100%; height: 100%; 
+      }
+      
+      /* Updated areas to match the editor's dashed aesthetic */
+      .storyimage-area rect { 
+        fill: rgba(255, 255, 255, 0.3); 
+        stroke: var(--av-text); 
+        stroke-width: 2; 
+        stroke-dasharray: 4 4; /* Dashed line */
+        cursor: pointer; 
+        transition: all 0.1s ease; 
+      }
+      
+      .storyimage-area:hover rect { 
+        fill: rgba(0, 191, 255, 0.2); /* Accent tint */
+        stroke: var(--av-accent-bg); 
+        stroke-dasharray: 0; /* Solid line on hover */
+      }
+      
+      .storyimage-area text { 
+        font-family: var(--av-font); 
+        font-weight: bold;
+        fill: var(--av-text); 
+        text-anchor: middle; 
+        dominant-baseline: middle; 
+        pointer-events: none; 
+      }
     `;
     document.head.appendChild(style);
   }

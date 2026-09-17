@@ -25,8 +25,18 @@ export default class GrammarEngine {
    * and uses a Depth-First Search (DFS) to detect infinite circular dependencies.
    */
   testGrammar() {
+    this.grammarReport = { errors: [], warnings: [], passed: true };
+
     if (!this.grammar || Object.keys(this.grammar).length === 0) {
-      console.error("There is no grammar to test.");
+      this.grammarReport.errors.push({ code: "NO_GRAMMAR" });
+      this.grammarReport.passed = false;
+      return this;
+    }
+
+    // EDGE CASE: The root is an array instead of an object mapping
+    if (Array.isArray(this.grammar) || typeof this.grammar !== 'object') {
+      this.grammarReport.errors.push({ code: "INVALID_ROOT" });
+      this.grammarReport.passed = false;
       return this;
     }
 
@@ -34,9 +44,22 @@ export default class GrammarEngine {
     let errorCount = 0;
     const dependencyGraph = {};
 
-    // Build an adjacency map of all dependencies
     for (const [key, rules] of Object.entries(this.grammar)) {
-      if (!Array.isArray(rules)) continue; 
+      // EDGE CASE: The rule is a string, number, or object instead of an Array
+      if (!Array.isArray(rules)) {
+        grammarError = true;
+        errorCount++;
+        this.grammarReport.errors.push({ code: "INVALID_RULE_TYPE", rule: key });
+        continue;
+      }
+      
+      // EDGE CASE: The array is perfectly formatted, but completely empty
+      if (rules.length === 0) {
+        errorCount++;
+        this.grammarReport.warnings.push({ code: "EMPTY_RULE", rule: key });
+        continue;
+      }
+
       dependencyGraph[key] = new Set(); 
 
       for (const ruleString of rules) {
@@ -44,7 +67,13 @@ export default class GrammarEngine {
         if (parsedState.isError) {
           grammarError = true;
           errorCount++;
-          console.error(`Syntax error in rule "${key}":`, parsedState.error);
+          
+          this.grammarReport.errors.push({ 
+            code: "SYNTAX_ERROR", 
+            rule: key, 
+            details: parsedState.error 
+          });
+          console.error(`Syntax error in rule "${key}": ${parsedState.error}`);
           continue;
         }
 
@@ -65,12 +94,17 @@ export default class GrammarEngine {
         if (deadEnds.length > 0) {
           grammarError = true;
           errorCount++;
+          
+          this.grammarReport.errors.push({ 
+            code: "MISSING_REF", 
+            rule: key, 
+            missing: deadEnds 
+          });
           console.error(`The following rules, referenced in "${key}", do not exist: ${deadEnds.join(", ")}`);
         }
       }
     }
 
-    // Cycle Detection (DFS)
     const visited = new Set();
     const recursionStack = new Set();
     const cycles = [];
@@ -98,17 +132,21 @@ export default class GrammarEngine {
     if (cycles.length > 0) {
       grammarError = true;
       errorCount += cycles.length;
-      console.warn(`Warning: Circular dependencies detected! This may cause infinite loops during generation:`);
-      cycles.forEach(cycle => console.warn(`  - ${cycle}`));
+      console.warn(`Warning: Circular dependencies detected! This may cause infinite loops:`);
+      cycles.forEach(cycle => {
+        this.grammarReport.warnings.push({ code: "CIRCULAR_DEP", cycle: cycle });
+        console.warn(`  - ${cycle}`);
+      });
     }
 
     if (!grammarError) {
       console.log("Grammar test passed! No missing references or circular dependencies found.");
     } else {
+      this.grammarReport.passed = false;
       console.warn(`Grammar test finished with ${errorCount} error(s)/warning(s).`);
     }
 
-    return this; 
+    return this;
   }
 
   /**

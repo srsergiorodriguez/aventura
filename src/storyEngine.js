@@ -12,6 +12,10 @@ export default class StoryEngine {
     this.previousScene = null;
     this.onSceneChange = null;
 
+    // Navigation Context
+    this.history = [];
+    this.startSceneId = null;
+
     // Persists generative text variables across the lifespan of a single playthrough
     this.storyContext = {};
   }
@@ -25,8 +29,6 @@ export default class StoryEngine {
 
   /**
    * Schema Sanitization Gate.
-   * Ensures the incoming JSON strictly adheres to the Aventura V3 English schema.
-   * Strips out unrecognized keys and undefined values to optimize memory.
    */
   _normalizeScenes(rawScenes) {
     const normalized = {};
@@ -40,13 +42,11 @@ export default class StoryEngine {
         plop: scene.plop,
         title: scene.title,
         
-        // Extended module configurations
         igrama: scene.igrama,
         viz: scene.viz,             
         dataScene: scene.dataScene, 
         meta: scene.meta,           
 
-        // Hit-area geometry and navigation
         areas: scene.areas ? scene.areas.map(a => ({
           x: a.x, y: a.y, w: a.w, h: a.h,
           btn: a.btn,
@@ -55,7 +55,6 @@ export default class StoryEngine {
           tooltip: a.tooltip
         })) : undefined,
         
-        // Standard button options
         options: scene.options ? scene.options.map(o => ({
           btn: o.btn,
           text: o.text,
@@ -64,7 +63,6 @@ export default class StoryEngine {
         })) : undefined
       };
 
-      // Strip undefined properties to maintain a minimal memory footprint
       Object.keys(normalized[key]).forEach(k => normalized[key][k] === undefined && delete normalized[key][k]);
     }
     return normalized;
@@ -91,8 +89,7 @@ export default class StoryEngine {
   }
 
   /**
-   * Generates a temporary, intermediate scene for branching options 
-   * that contain their own transitional text.
+   * Generates a temporary, intermediate scene for branching options.
    */
   playDynamicScene(option) {
     const tempScene = {
@@ -104,22 +101,58 @@ export default class StoryEngine {
   }
 
   /**
+   * Native Restart Function
+   * Clears history, resets generative context, and boots the first scene.
+   */
+  restart() {
+    if (!this.startSceneId) return;
+    this.history = [];
+    this.resetContext();
+    this.goToScene(this.startSceneId);
+  }
+
+  /**
+   * Native Back Function
+   * Pops the history stack and dispatches the previous scene without logging it.
+   */
+  goBack() {
+    if (this.history.length === 0) return;
+    const prevSceneId = this.history.pop();
+    const scene = this.scenes[prevSceneId];
+    this._dispatchScene(prevSceneId, scene, true);
+  }
+
+  /**
    * The core state machine tick. Updates history, processes grammar, 
    * packages the state, and broadcasts to the UI layer.
    */
-  _dispatchScene(sceneId, scene) {
+  _dispatchScene(sceneId, scene, isGoingBack = false) {
+    // Record the absolute start scene on the very first dispatch
+    if (!this.startSceneId) {
+      this.startSceneId = sceneId;
+    }
+
     if (this.currentScene !== sceneId) {
       this.previousScene = this.currentScene;
+      
+      // If we are moving forward, push the current scene to the history stack
+      if (!isGoingBack && this.currentScene) {
+        this.history.push(this.currentScene);
+      }
     }
+    
     this.currentScene = sceneId;
 
-    // Automatically inject a "Go Back" button for auto-generated collection artifacts
     if (scene.dataScene && this.previousScene) {
       scene.options = [{ btn: "<<<", scene: this.previousScene }];
     }
 
-    // Expand generative tags (e.g. <animal>) against the current playthrough memory
     const parsedText = this.grammar ? this.grammar.expandText(scene.text || '', this.storyContext) : (scene.text || '');
+
+    // Terminal State Detection (Dead End)
+    const hasOptions = scene.options && scene.options.length > 0;
+    const hasAreaLinks = scene.areas && scene.areas.some(a => a.scene);
+    const isTerminal = !hasOptions && !hasAreaLinks;
 
     const sceneState = {
       id: sceneId,
@@ -128,7 +161,11 @@ export default class StoryEngine {
       options: scene.options, 
       image: scene.image,     
       areas: scene.areas,
-      deadEnd: scene.deadEnd
+      deadEnd: scene.deadEnd,
+      
+      // Broadcast navigational state to the UI layer
+      canGoBack: this.history.length > 0,
+      isTerminal: isTerminal
     };
 
     if (this.onSceneChange) {

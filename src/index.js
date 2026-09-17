@@ -22,7 +22,7 @@ export default class Aventura {
       defaultCSS: true,
       adventureContainer: undefined,
       adventureScroll: false,
-      adventureSlide: true,
+      adventureSlide: false,
       evalTags: false,
       igramaFormat: "png",
       minigifOptions: {},
@@ -31,13 +31,17 @@ export default class Aventura {
       vizImageSize: 50,
       theme: {
         background: '#ffffff',
-        containerBorder: "solid 1px black",
         text: '#000000',
-        fontFamily: '"Courier New", Courier, monospace',
-        accentBackground: '#000000',
-        accentText: '#ffffff',
-        buttonBorder: 'solid 1px black',
-        borderRadius: '0px'
+        fontFamily: "'Inconsolata', monospace",
+        accentBackground: '#00bfff',
+        accentText: '#000000',
+        buttonBorder: '2px solid #000000',
+        borderRadius: '0px',
+        containerBorder: 'none',
+        buttonBg: '#ffffff',
+        buttonText: '#000000',
+        buttonHoverBg: '#000000',
+        buttonHoverText: '#ffffff'
       }
     }, options);
 
@@ -59,7 +63,11 @@ export default class Aventura {
     this.setGrammar = (g) => { this.grammarEngine.setGrammar(g); return this; };
     this.expandGrammar = (start, context) => this.grammarEngine.expandGrammar(start, context);
     this.expandText = (text, context) => this.grammarEngine.expandText(text, context);
-    this.testGrammar = () => { this.grammarEngine.testGrammar(); return this; };
+    this.testGrammar = () => {
+      this.grammarEngine.testGrammar();
+      this.grammarReport = this.grammarEngine.grammarReport;
+      return this;
+    };
     
     // --- Markov Chains ---
     this.markovModel = (file, n, save) => this.markovEngine.buildModel(file, n, save ? this.saveJSON : null);

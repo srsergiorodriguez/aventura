@@ -260,8 +260,18 @@ var Aventura = (function () {
      * and uses a Depth-First Search (DFS) to detect infinite circular dependencies.
      */
     testGrammar() {
+      this.grammarReport = { errors: [], warnings: [], passed: true };
+
       if (!this.grammar || Object.keys(this.grammar).length === 0) {
-        console.error("There is no grammar to test.");
+        this.grammarReport.errors.push({ code: "NO_GRAMMAR" });
+        this.grammarReport.passed = false;
+        return this;
+      }
+
+      // EDGE CASE: The root is an array instead of an object mapping
+      if (Array.isArray(this.grammar) || typeof this.grammar !== 'object') {
+        this.grammarReport.errors.push({ code: "INVALID_ROOT" });
+        this.grammarReport.passed = false;
         return this;
       }
 
@@ -269,9 +279,22 @@ var Aventura = (function () {
       let errorCount = 0;
       const dependencyGraph = {};
 
-      // Build an adjacency map of all dependencies
       for (const [key, rules] of Object.entries(this.grammar)) {
-        if (!Array.isArray(rules)) continue; 
+        // EDGE CASE: The rule is a string, number, or object instead of an Array
+        if (!Array.isArray(rules)) {
+          grammarError = true;
+          errorCount++;
+          this.grammarReport.errors.push({ code: "INVALID_RULE_TYPE", rule: key });
+          continue;
+        }
+        
+        // EDGE CASE: The array is perfectly formatted, but completely empty
+        if (rules.length === 0) {
+          errorCount++;
+          this.grammarReport.warnings.push({ code: "EMPTY_RULE", rule: key });
+          continue;
+        }
+
         dependencyGraph[key] = new Set(); 
 
         for (const ruleString of rules) {
@@ -279,7 +302,13 @@ var Aventura = (function () {
           if (parsedState.isError) {
             grammarError = true;
             errorCount++;
-            console.error(`Syntax error in rule "${key}":`, parsedState.error);
+            
+            this.grammarReport.errors.push({ 
+              code: "SYNTAX_ERROR", 
+              rule: key, 
+              details: parsedState.error 
+            });
+            console.error(`Syntax error in rule "${key}": ${parsedState.error}`);
             continue;
           }
 
@@ -300,12 +329,17 @@ var Aventura = (function () {
           if (deadEnds.length > 0) {
             grammarError = true;
             errorCount++;
+            
+            this.grammarReport.errors.push({ 
+              code: "MISSING_REF", 
+              rule: key, 
+              missing: deadEnds 
+            });
             console.error(`The following rules, referenced in "${key}", do not exist: ${deadEnds.join(", ")}`);
           }
         }
       }
 
-      // Cycle Detection (DFS)
       const visited = new Set();
       const recursionStack = new Set();
       const cycles = [];
@@ -333,17 +367,21 @@ var Aventura = (function () {
       if (cycles.length > 0) {
         grammarError = true;
         errorCount += cycles.length;
-        console.warn(`Warning: Circular dependencies detected! This may cause infinite loops during generation:`);
-        cycles.forEach(cycle => console.warn(`  - ${cycle}`));
+        console.warn(`Warning: Circular dependencies detected! This may cause infinite loops:`);
+        cycles.forEach(cycle => {
+          this.grammarReport.warnings.push({ code: "CIRCULAR_DEP", cycle: cycle });
+          console.warn(`  - ${cycle}`);
+        });
       }
 
       if (!grammarError) {
         console.log("Grammar test passed! No missing references or circular dependencies found.");
       } else {
+        this.grammarReport.passed = false;
         console.warn(`Grammar test finished with ${errorCount} error(s)/warning(s).`);
       }
 
-      return this; 
+      return this;
     }
 
     /**
@@ -607,6 +645,10 @@ var Aventura = (function () {
       this.previousScene = null;
       this.onSceneChange = null;
 
+      // Navigation Context
+      this.history = [];
+      this.startSceneId = null;
+
       // Persists generative text variables across the lifespan of a single playthrough
       this.storyContext = {};
     }
@@ -620,8 +662,6 @@ var Aventura = (function () {
 
     /**
      * Schema Sanitization Gate.
-     * Ensures the incoming JSON strictly adheres to the Aventura V3 English schema.
-     * Strips out unrecognized keys and undefined values to optimize memory.
      */
     _normalizeScenes(rawScenes) {
       const normalized = {};
@@ -635,13 +675,11 @@ var Aventura = (function () {
           plop: scene.plop,
           title: scene.title,
           
-          // Extended module configurations
           igrama: scene.igrama,
           viz: scene.viz,             
           dataScene: scene.dataScene, 
           meta: scene.meta,           
 
-          // Hit-area geometry and navigation
           areas: scene.areas ? scene.areas.map(a => ({
             x: a.x, y: a.y, w: a.w, h: a.h,
             btn: a.btn,
@@ -650,7 +688,6 @@ var Aventura = (function () {
             tooltip: a.tooltip
           })) : undefined,
           
-          // Standard button options
           options: scene.options ? scene.options.map(o => ({
             btn: o.btn,
             text: o.text,
@@ -659,7 +696,6 @@ var Aventura = (function () {
           })) : undefined
         };
 
-        // Strip undefined properties to maintain a minimal memory footprint
         Object.keys(normalized[key]).forEach(k => normalized[key][k] === undefined && delete normalized[key][k]);
       }
       return normalized;
@@ -686,8 +722,7 @@ var Aventura = (function () {
     }
 
     /**
-     * Generates a temporary, intermediate scene for branching options 
-     * that contain their own transitional text.
+     * Generates a temporary, intermediate scene for branching options.
      */
     playDynamicScene(option) {
       const tempScene = {
@@ -699,22 +734,58 @@ var Aventura = (function () {
     }
 
     /**
+     * Native Restart Function
+     * Clears history, resets generative context, and boots the first scene.
+     */
+    restart() {
+      if (!this.startSceneId) return;
+      this.history = [];
+      this.resetContext();
+      this.goToScene(this.startSceneId);
+    }
+
+    /**
+     * Native Back Function
+     * Pops the history stack and dispatches the previous scene without logging it.
+     */
+    goBack() {
+      if (this.history.length === 0) return;
+      const prevSceneId = this.history.pop();
+      const scene = this.scenes[prevSceneId];
+      this._dispatchScene(prevSceneId, scene, true);
+    }
+
+    /**
      * The core state machine tick. Updates history, processes grammar, 
      * packages the state, and broadcasts to the UI layer.
      */
-    _dispatchScene(sceneId, scene) {
+    _dispatchScene(sceneId, scene, isGoingBack = false) {
+      // Record the absolute start scene on the very first dispatch
+      if (!this.startSceneId) {
+        this.startSceneId = sceneId;
+      }
+
       if (this.currentScene !== sceneId) {
         this.previousScene = this.currentScene;
+        
+        // If we are moving forward, push the current scene to the history stack
+        if (!isGoingBack && this.currentScene) {
+          this.history.push(this.currentScene);
+        }
       }
+      
       this.currentScene = sceneId;
 
-      // Automatically inject a "Go Back" button for auto-generated collection artifacts
       if (scene.dataScene && this.previousScene) {
         scene.options = [{ btn: "<<<", scene: this.previousScene }];
       }
 
-      // Expand generative tags (e.g. <animal>) against the current playthrough memory
       const parsedText = this.grammar ? this.grammar.expandText(scene.text || '', this.storyContext) : (scene.text || '');
+
+      // Terminal State Detection (Dead End)
+      const hasOptions = scene.options && scene.options.length > 0;
+      const hasAreaLinks = scene.areas && scene.areas.some(a => a.scene);
+      const isTerminal = !hasOptions && !hasAreaLinks;
 
       const sceneState = {
         id: sceneId,
@@ -723,7 +794,11 @@ var Aventura = (function () {
         options: scene.options, 
         image: scene.image,     
         areas: scene.areas,
-        deadEnd: scene.deadEnd
+        deadEnd: scene.deadEnd,
+        
+        // Broadcast navigational state to the UI layer
+        canGoBack: this.history.length > 0,
+        isTerminal: isTerminal
       };
 
       if (this.onSceneChange) {
@@ -1002,14 +1077,24 @@ var Aventura = (function () {
 
     /**
      * Generates interactive buttons for scene traversal. 
-     * Handles intermediate dynamic scenes and dead ends.
+     * Handles intermediate dynamic scenes, dead ends, and dynamic history navigation.
      */
     _renderButtons(sceneState, storydiv) {
       const btns_container = document.createElement("div");
       btns_container.className = "storybutton-container";
       storydiv.appendChild(btns_container);
 
-      if (sceneState.options) {
+      // --- 1. INJECT BACK BUTTON ---
+      if (this.options.backBtn && sceneState.canGoBack) {
+        const backBtn = document.createElement("button");
+        backBtn.className = "storybutton";
+        backBtn.textContent = "<<<";
+        backBtn.addEventListener("click", () => this.engine.goBack());
+        btns_container.appendChild(backBtn);
+      }
+
+      // --- 2. RENDER NORMAL OPTIONS ---
+      if (sceneState.options && sceneState.options.length > 0) {
         for (const opt of sceneState.options) {
           const btn = document.createElement("button");
           btn.className = "storybutton";
@@ -1026,14 +1111,25 @@ var Aventura = (function () {
             }
           });
         }
-      } else if (!sceneState.deadEnd) {
+      } else if (!sceneState.deadEnd && !sceneState.isTerminal) {
+        // Fallback continue button if a scene target is defined without explicit buttons
         const target = sceneState.rawScene.scene || sceneState.rawScene.escena;
-        const btn = document.createElement("button");
-        btn.className = "storybutton";
-        btn.textContent = this.lang === 'en' ? "Continue" : "Continuar";
-        btns_container.appendChild(btn);
-        
-        btn.addEventListener("click", () => this.engine.goToScene(target));
+        if (target) {
+          const btn = document.createElement("button");
+          btn.className = "storybutton";
+          btn.textContent = ">>>";
+          btns_container.appendChild(btn);
+          btn.addEventListener("click", () => this.engine.goToScene(target));
+        }
+      }
+
+      // --- 3. INJECT RESTART BUTTON ---
+      if (this.options.restartBtn && sceneState.isTerminal) {
+        const restartBtn = document.createElement("button");
+        restartBtn.className = "storybutton btn-restart";
+        restartBtn.textContent = "↻";
+        restartBtn.addEventListener("click", () => this.engine.restart());
+        btns_container.appendChild(restartBtn);
       }
 
       if (this.options.adventureSlide) {
@@ -1068,9 +1164,32 @@ var Aventura = (function () {
         --av-btn-hover-bg: ${t.buttonHoverBg || t.accentBackground};
         --av-btn-hover-text: ${t.buttonHoverText || t.accentText};
       }
-      .storygeneraldiv { box-sizing: border-box; margin: auto; max-width: 600px; font-family: var(--av-font); background: var(--av-bg); color: var(--av-text); }
-      .storydiv { box-sizing: border-box; width: 100%; display: flex; padding: 1em; flex-direction: column; border: var(--av-container-border); }
-      .storyp { font-size: 1.1em; line-height: 1.5; min-height: 1.5em; white-space: pre-wrap; margin-bottom: 1.5em; }
+      
+      .storygeneraldiv { 
+        box-sizing: border-box; 
+        margin: auto; 
+        max-width: 600px; 
+        font-family: var(--av-font); 
+        background: var(--av-bg); 
+        color: var(--av-text);
+      }
+      
+      .storydiv { 
+        box-sizing: border-box; 
+        width: 100%; 
+        display: flex; 
+        padding: 1em; 
+        flex-direction: column; 
+        border: var(--av-container-border); 
+      }
+      
+      .storyp { 
+        font-size: 1.1em; 
+        line-height: 1.5; 
+        min-height: 1.5em; 
+        white-space: pre-wrap; 
+        margin-bottom: 1.5em; 
+      }
       
       .storybutton { 
         background: var(--av-btn-bg); 
@@ -1081,23 +1200,61 @@ var Aventura = (function () {
         padding: 0.6em 1.2em; 
         font-size: 1em; 
         font-family: var(--av-font); 
+        font-weight: bold;
         cursor: pointer; 
-        transition: all 0.2s ease; 
+        transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease; 
       }
       
+      /* The tactile pop-out effect */
       .storybutton:hover { 
         background: var(--av-btn-hover-bg); 
         color: var(--av-btn-hover-text);
-        opacity: 0.9; 
+        transform: translate(-2px, -2px);
+        box-shadow: 4px 4px 0px var(--av-accent-bg);
       }
       
-      .storyimage-container { position: relative; width: 100%; margin: 1em auto; }
-      .storyimage { width: 100%; display: block; border-radius: var(--av-radius); }
-      .story-svg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-      .storyimage-area rect { fill: rgba(255,255,255,0.8); stroke: var(--av-text); stroke-width: 2; cursor: pointer; transition: fill 0.2s ease; }
-      .storyimage-area:hover rect { fill: var(--av-accent-bg); }
-      .storyimage-area text { font-family: var(--av-font); fill: var(--av-text); text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
-      .storyimage-area:hover text { fill: var(--av-accent-text); }
+      .storyimage-container { 
+        position: relative; 
+        width: 100%; 
+        margin: 1em auto; 
+        border: 2px solid var(--av-text); /* Hard border on the image */
+      }
+      
+      .storyimage { 
+        width: 100%; 
+        display: block; 
+        border-radius: var(--av-radius); 
+      }
+      
+      .story-svg-overlay { 
+        position: absolute; 
+        top: 0; left: 0; width: 100%; height: 100%; 
+      }
+      
+      /* Updated areas to match the editor's dashed aesthetic */
+      .storyimage-area rect { 
+        fill: rgba(255, 255, 255, 0.3); 
+        stroke: var(--av-text); 
+        stroke-width: 2; 
+        stroke-dasharray: 4 4; /* Dashed line */
+        cursor: pointer; 
+        transition: all 0.1s ease; 
+      }
+      
+      .storyimage-area:hover rect { 
+        fill: rgba(0, 191, 255, 0.2); /* Accent tint */
+        stroke: var(--av-accent-bg); 
+        stroke-dasharray: 0; /* Solid line on hover */
+      }
+      
+      .storyimage-area text { 
+        font-family: var(--av-font); 
+        font-weight: bold;
+        fill: var(--av-text); 
+        text-anchor: middle; 
+        dominant-baseline: middle; 
+        pointer-events: none; 
+      }
     `;
       document.head.appendChild(style);
     }
@@ -1131,21 +1288,12 @@ var Aventura = (function () {
     // 1. GRAMMAR EXPANSION & PARSING
     // ==========================================
 
-    /**
-     * Expands a starting symbol into a fully resolved array of drawing layers.
-     */
     expand(startSymbol) {
       if (!this.igrama || !this.igrama.grammar) return [];
-      
       const rawString = this._resolveIgramaGrammar(startSymbol);
-      
-      // Igrama layers are delimited by the '|' character
       return rawString.split('|').map(drawing => this.decodeDrawing(drawing));
     }
 
-    /**
-     * Recursively resolves Igrama tags (e.g., <tag_name>).
-     */
     _resolveIgramaGrammar(symbol, depth = 0) {
       if (depth > 100) return "";
       
@@ -1159,7 +1307,6 @@ var Aventura = (function () {
 
       const pick = getRandomPick(rules).element;
 
-      // Recursively expand nested tags within the chosen rule
       return pick.replace(/<([^>]+)>/g, (match, innerTag) => {
         return this._resolveIgramaGrammar(innerTag, depth + 1);
       });
@@ -1176,13 +1323,19 @@ var Aventura = (function () {
       let decoded = { type, attribute };
 
       if (type === 'vector') {
-        // Vector data contains multiple doodles delimited by '**'
-        // Each doodle format: color&weight&x1,y1,x2,y2...
         decoded.content = content.split('**').map(doodle => {
-          const [color, weight, v] = doodle.split('&');
+          // NEW PARSER: Automatically supports both legacy formats and the new 2-Bit format
+          const parts = doodle.split('&');
           const xy = [];
-          xy.color = color;
-          xy.weight = weight;
+          
+          xy.color = parts[0];
+          xy.weight = parts[1];
+          
+          // If it's the new format, grab type and style. If legacy, default to stroke/solid.
+          xy.type = parts.length > 3 ? parts[2] : 'stroke';
+          xy.style = parts.length > 3 ? parts[3] : 'solid';
+          
+          const v = parts.length > 3 ? parts[4] : parts[2];
           if (!v) return xy;
           
           const flat = v.split(',');
@@ -1192,15 +1345,11 @@ var Aventura = (function () {
           return xy;
         });
       } else {
-        // For 'url' types, content is the source path
         decoded.content = content; 
       }
       return decoded;
     }
 
-    /**
-     * Extracts and reverses parallel text attributes generated alongside the image.
-     */
     getText(layers) {
       return layers.filter(d => d.attribute).map(d => d.attribute).reverse().join(' ').trim();
     }
@@ -1209,10 +1358,6 @@ var Aventura = (function () {
     // 2. RENDERING PIPELINE
     // ==========================================
 
-    /**
-     * Renders the parsed layers to an off-screen Canvas and returns a Base64 Data URL.
-     * Supports 'png' or 'gif' output formats.
-     */
     async getDataUrl(layers, format = 'png') {
       if (!this.igrama || !this.igrama.metadata) return '';
 
@@ -1241,10 +1386,8 @@ var Aventura = (function () {
           const options = Object.assign({ colorResolution: 7, dither: false, delay: 50 }, this.minigifOptions);
           const gif = new MiniGif(options);   
           
-          // Base Frame
           gif.addFrame(canvas); 
           
-          // Wiggle Frame: Applies a slight coordinate displacement for a hand-drawn boil effect
           const layerWiggle = this._getLayerWiggle(layers);
           ctx.fillStyle = this.igrama.metadata.bg || '#FFFFFF';
           ctx.fillRect(0, 0, width, height);
@@ -1260,9 +1403,6 @@ var Aventura = (function () {
       return dataUrl;
     }
 
-    /**
-     * Iterates through layers and draws images or vector splines onto the target Canvas context.
-     */
     async drawLayers(layers, ctx) {
       for (const [index, layer] of layers.entries()) {
         if (layer.type === 'url' && this.igrama.sections && this.igrama.sections[index]) {
@@ -1273,7 +1413,7 @@ var Aventura = (function () {
             img.src = layer.content;
             this.imgsMemo[layer.content] = await new Promise(resolve => {
               img.onload = () => resolve(img);
-              img.onerror = () => resolve(img); // Fail gracefully on bad URLs
+              img.onerror = () => resolve(img);
             });
           }
           ctx.drawImage(this.imgsMemo[layer.content], x, y, w, h);
@@ -1282,27 +1422,91 @@ var Aventura = (function () {
           for (const doodle of layer.content) {
             if (doodle.length === 0) continue;
             const spline = this._getSpline(doodle);
-            this._drawSpline(spline, ctx, doodle.color, doodle.weight);        
+            // Pass the new type and style properties to the drawing function
+            this._drawSpline(spline, ctx, doodle.color, doodle.weight, doodle.type, doodle.style);        
           }
         }
       }
     }
 
-    _drawSpline(spline, ctx, color, weight) {
-      ctx.lineWidth = weight;
-      ctx.strokeStyle = color;
-      ctx.fillStyle = 'rgba(0,0,0,0)';
+    _drawSpline(spline, ctx, semanticColor, weight, type, style) {
+      if (spline.length === 0) return;
+
+      // 1. Resolve Semantic Color
+      let actualHex = '#000000';
+      if (semanticColor === 'white') actualHex = '#ffffff';
+      else if (semanticColor === 'black') actualHex = '#000000';
+      else if (semanticColor === 'accent' && this.igrama && this.igrama.metadata) {
+        actualHex = this.igrama.metadata.accentColor || '#000000';
+      } else if (semanticColor && semanticColor.startsWith('#')) {
+        actualHex = semanticColor; // Legacy backwards compatibility
+      }
+
+      // 2. Generate the pattern (Solid or Hatching)
+      const fillStyle = this._getPattern(ctx, actualHex, style);
+
+      // 3. Create the Path
       ctx.beginPath();
       for (let i = 0; i < spline.length; i++) {
         if (i === 0) ctx.moveTo(...spline[0]);
         else ctx.lineTo(...spline[i]);
       }
-      ctx.stroke();
+
+      // 4. Fill or Stroke
+      if (type === 'fill') {
+        ctx.fillStyle = fillStyle;
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = fillStyle;
+        ctx.lineWidth = weight;
+        ctx.stroke();
+      }
     }
-    
+
     /**
-     * Expands sparse vector points into a smooth curve using Catmull-Rom spline interpolation.
+     * Generates a CanvasPattern for native Dither/Hatching fills
      */
+    _getPattern(ctx, color, style) {
+      if (style === 'solid') return color;
+      
+      // Safely check for window (in case Aventura runs in Node environments)
+      const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
+      
+      const pCanvas = document.createElement('canvas');
+      const etchSize = 5; 
+      
+      pCanvas.width = etchSize * dpr;
+      pCanvas.height = etchSize * dpr;
+      const pCtx = pCanvas.getContext('2d');
+      pCtx.scale(dpr, dpr);
+      
+      pCtx.strokeStyle = color;
+      pCtx.lineWidth = 1; 
+      pCtx.lineCap = 'square';
+      
+      pCtx.beginPath();
+      pCtx.moveTo(0, etchSize);
+      pCtx.lineTo(etchSize, 0);
+      pCtx.stroke();
+      
+      pCtx.beginPath();
+      pCtx.moveTo(-etchSize / 2, etchSize / 2);
+      pCtx.lineTo(etchSize / 2, -etchSize / 2);
+      pCtx.stroke();
+      
+      pCtx.beginPath();
+      pCtx.moveTo(etchSize / 2, etchSize * 1.5);
+      pCtx.lineTo(etchSize * 1.5, etchSize / 2);
+      pCtx.stroke();
+      
+      const pattern = ctx.createPattern(pCanvas, 'repeat');
+      if (typeof DOMMatrix !== 'undefined') {
+        pattern.setTransform(new DOMMatrix().scale(1 / dpr, 1 / dpr));
+      }
+      
+      return pattern;
+    }
+
     _getSpline(points) {
       let spline = [];
       for (let i = 0; i < points.length - 1; i++) {
@@ -1323,10 +1527,6 @@ var Aventura = (function () {
       return spline;
     }
 
-    /**
-     * Clones and slightly perturbs vector coordinates to generate a secondary 
-     * "boil" frame for GIF animation.
-     */
     _getLayerWiggle(layers) {
       const r = 3;
       const layerWiggle = JSON.parse(JSON.stringify(layers));
@@ -1339,8 +1539,11 @@ var Aventura = (function () {
               if (Math.random() < 0.5) v[0] += rndRng(-r, r);
               else v[1] += rndRng(-r, r);  
             }
+            // Carry over all rendering properties to the Wiggle Frame
             doodle.color = layers[i].content[j].color;
             doodle.weight = layers[i].content[j].weight;
+            doodle.type = layers[i].content[j].type;
+            doodle.style = layers[i].content[j].style;
           }
         }
       }
@@ -1629,7 +1832,7 @@ var Aventura = (function () {
         defaultCSS: true,
         adventureContainer: undefined,
         adventureScroll: false,
-        adventureSlide: true,
+        adventureSlide: false,
         evalTags: false,
         igramaFormat: "png",
         minigifOptions: {},
@@ -1638,13 +1841,17 @@ var Aventura = (function () {
         vizImageSize: 50,
         theme: {
           background: '#ffffff',
-          containerBorder: "solid 1px black",
           text: '#000000',
-          fontFamily: '"Courier New", Courier, monospace',
-          accentBackground: '#000000',
-          accentText: '#ffffff',
-          buttonBorder: 'solid 1px black',
-          borderRadius: '0px'
+          fontFamily: "'Inconsolata', monospace",
+          accentBackground: '#00bfff',
+          accentText: '#000000',
+          buttonBorder: '2px solid #000000',
+          borderRadius: '0px',
+          containerBorder: 'none',
+          buttonBg: '#ffffff',
+          buttonText: '#000000',
+          buttonHoverBg: '#000000',
+          buttonHoverText: '#ffffff'
         }
       }, options);
 
@@ -1666,7 +1873,11 @@ var Aventura = (function () {
       this.setGrammar = (g) => { this.grammarEngine.setGrammar(g); return this; };
       this.expandGrammar = (start, context) => this.grammarEngine.expandGrammar(start, context);
       this.expandText = (text, context) => this.grammarEngine.expandText(text, context);
-      this.testGrammar = () => { this.grammarEngine.testGrammar(); return this; };
+      this.testGrammar = () => {
+        this.grammarEngine.testGrammar();
+        this.grammarReport = this.grammarEngine.grammarReport;
+        return this;
+      };
       
       // --- Markov Chains ---
       this.markovModel = (file, n, save) => this.markovEngine.buildModel(file, n, save ? this.saveJSON : null);

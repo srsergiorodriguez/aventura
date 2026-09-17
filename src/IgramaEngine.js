@@ -28,21 +28,12 @@ export default class IgramaEngine {
   // 1. GRAMMAR EXPANSION & PARSING
   // ==========================================
 
-  /**
-   * Expands a starting symbol into a fully resolved array of drawing layers.
-   */
   expand(startSymbol) {
     if (!this.igrama || !this.igrama.grammar) return [];
-    
     const rawString = this._resolveIgramaGrammar(startSymbol);
-    
-    // Igrama layers are delimited by the '|' character
     return rawString.split('|').map(drawing => this.decodeDrawing(drawing));
   }
 
-  /**
-   * Recursively resolves Igrama tags (e.g., <tag_name>).
-   */
   _resolveIgramaGrammar(symbol, depth = 0) {
     if (depth > 100) return "";
     
@@ -56,7 +47,6 @@ export default class IgramaEngine {
 
     const pick = getRandomPick(rules).element;
 
-    // Recursively expand nested tags within the chosen rule
     return pick.replace(/<([^>]+)>/g, (match, innerTag) => {
       return this._resolveIgramaGrammar(innerTag, depth + 1);
     });
@@ -73,13 +63,19 @@ export default class IgramaEngine {
     let decoded = { type, attribute };
 
     if (type === 'vector') {
-      // Vector data contains multiple doodles delimited by '**'
-      // Each doodle format: color&weight&x1,y1,x2,y2...
       decoded.content = content.split('**').map(doodle => {
-        const [color, weight, v] = doodle.split('&');
+        // NEW PARSER: Automatically supports both legacy formats and the new 2-Bit format
+        const parts = doodle.split('&');
         const xy = [];
-        xy.color = color;
-        xy.weight = weight;
+        
+        xy.color = parts[0];
+        xy.weight = parts[1];
+        
+        // If it's the new format, grab type and style. If legacy, default to stroke/solid.
+        xy.type = parts.length > 3 ? parts[2] : 'stroke';
+        xy.style = parts.length > 3 ? parts[3] : 'solid';
+        
+        const v = parts.length > 3 ? parts[4] : parts[2];
         if (!v) return xy;
         
         const flat = v.split(',');
@@ -89,15 +85,11 @@ export default class IgramaEngine {
         return xy;
       });
     } else {
-      // For 'url' types, content is the source path
       decoded.content = content; 
     }
     return decoded;
   }
 
-  /**
-   * Extracts and reverses parallel text attributes generated alongside the image.
-   */
   getText(layers) {
     return layers.filter(d => d.attribute).map(d => d.attribute).reverse().join(' ').trim();
   }
@@ -106,10 +98,6 @@ export default class IgramaEngine {
   // 2. RENDERING PIPELINE
   // ==========================================
 
-  /**
-   * Renders the parsed layers to an off-screen Canvas and returns a Base64 Data URL.
-   * Supports 'png' or 'gif' output formats.
-   */
   async getDataUrl(layers, format = 'png') {
     if (!this.igrama || !this.igrama.metadata) return '';
 
@@ -138,10 +126,8 @@ export default class IgramaEngine {
         const options = Object.assign({ colorResolution: 7, dither: false, delay: 50 }, this.minigifOptions);
         const gif = new MiniGif(options);   
         
-        // Base Frame
         gif.addFrame(canvas); 
         
-        // Wiggle Frame: Applies a slight coordinate displacement for a hand-drawn boil effect
         const layerWiggle = this._getLayerWiggle(layers);
         ctx.fillStyle = this.igrama.metadata.bg || '#FFFFFF';
         ctx.fillRect(0, 0, width, height);
@@ -157,9 +143,6 @@ export default class IgramaEngine {
     return dataUrl;
   }
 
-  /**
-   * Iterates through layers and draws images or vector splines onto the target Canvas context.
-   */
   async drawLayers(layers, ctx) {
     for (const [index, layer] of layers.entries()) {
       if (layer.type === 'url' && this.igrama.sections && this.igrama.sections[index]) {
@@ -170,7 +153,7 @@ export default class IgramaEngine {
           img.src = layer.content;
           this.imgsMemo[layer.content] = await new Promise(resolve => {
             img.onload = () => resolve(img);
-            img.onerror = () => resolve(img); // Fail gracefully on bad URLs
+            img.onerror = () => resolve(img);
           });
         }
         ctx.drawImage(this.imgsMemo[layer.content], x, y, w, h);
@@ -179,27 +162,91 @@ export default class IgramaEngine {
         for (const doodle of layer.content) {
           if (doodle.length === 0) continue;
           const spline = this._getSpline(doodle);
-          this._drawSpline(spline, ctx, doodle.color, doodle.weight);        
+          // Pass the new type and style properties to the drawing function
+          this._drawSpline(spline, ctx, doodle.color, doodle.weight, doodle.type, doodle.style);        
         }
       }
     }
   }
 
-  _drawSpline(spline, ctx, color, weight) {
-    ctx.lineWidth = weight;
-    ctx.strokeStyle = color;
-    ctx.fillStyle = 'rgba(0,0,0,0)';
+  _drawSpline(spline, ctx, semanticColor, weight, type, style) {
+    if (spline.length === 0) return;
+
+    // 1. Resolve Semantic Color
+    let actualHex = '#000000';
+    if (semanticColor === 'white') actualHex = '#ffffff';
+    else if (semanticColor === 'black') actualHex = '#000000';
+    else if (semanticColor === 'accent' && this.igrama && this.igrama.metadata) {
+      actualHex = this.igrama.metadata.accentColor || '#000000';
+    } else if (semanticColor && semanticColor.startsWith('#')) {
+      actualHex = semanticColor; // Legacy backwards compatibility
+    }
+
+    // 2. Generate the pattern (Solid or Hatching)
+    const fillStyle = this._getPattern(ctx, actualHex, style);
+
+    // 3. Create the Path
     ctx.beginPath();
     for (let i = 0; i < spline.length; i++) {
       if (i === 0) ctx.moveTo(...spline[0]);
       else ctx.lineTo(...spline[i]);
     }
-    ctx.stroke();
+
+    // 4. Fill or Stroke
+    if (type === 'fill') {
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+    } else {
+      ctx.strokeStyle = fillStyle;
+      ctx.lineWidth = weight;
+      ctx.stroke();
+    }
   }
-  
+
   /**
-   * Expands sparse vector points into a smooth curve using Catmull-Rom spline interpolation.
+   * Generates a CanvasPattern for native Dither/Hatching fills
    */
+  _getPattern(ctx, color, style) {
+    if (style === 'solid') return color;
+    
+    // Safely check for window (in case Aventura runs in Node environments)
+    const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
+    
+    const pCanvas = document.createElement('canvas');
+    const etchSize = 5; 
+    
+    pCanvas.width = etchSize * dpr;
+    pCanvas.height = etchSize * dpr;
+    const pCtx = pCanvas.getContext('2d');
+    pCtx.scale(dpr, dpr);
+    
+    pCtx.strokeStyle = color;
+    pCtx.lineWidth = 1; 
+    pCtx.lineCap = 'square';
+    
+    pCtx.beginPath();
+    pCtx.moveTo(0, etchSize);
+    pCtx.lineTo(etchSize, 0);
+    pCtx.stroke();
+    
+    pCtx.beginPath();
+    pCtx.moveTo(-etchSize / 2, etchSize / 2);
+    pCtx.lineTo(etchSize / 2, -etchSize / 2);
+    pCtx.stroke();
+    
+    pCtx.beginPath();
+    pCtx.moveTo(etchSize / 2, etchSize * 1.5);
+    pCtx.lineTo(etchSize * 1.5, etchSize / 2);
+    pCtx.stroke();
+    
+    const pattern = ctx.createPattern(pCanvas, 'repeat');
+    if (typeof DOMMatrix !== 'undefined') {
+      pattern.setTransform(new DOMMatrix().scale(1 / dpr, 1 / dpr));
+    }
+    
+    return pattern;
+  }
+
   _getSpline(points) {
     let spline = [];
     for (let i = 0; i < points.length - 1; i++) {
@@ -220,10 +267,6 @@ export default class IgramaEngine {
     return spline;
   }
 
-  /**
-   * Clones and slightly perturbs vector coordinates to generate a secondary 
-   * "boil" frame for GIF animation.
-   */
   _getLayerWiggle(layers) {
     const r = 3;
     const layerWiggle = JSON.parse(JSON.stringify(layers));
@@ -236,8 +279,11 @@ export default class IgramaEngine {
             if (Math.random() < 0.5) v[0] += rndRng(-r, r);
             else v[1] += rndRng(-r, r);  
           }
+          // Carry over all rendering properties to the Wiggle Frame
           doodle.color = layers[i].content[j].color;
           doodle.weight = layers[i].content[j].weight;
+          doodle.type = layers[i].content[j].type;
+          doodle.style = layers[i].content[j].style;
         }
       }
     }
