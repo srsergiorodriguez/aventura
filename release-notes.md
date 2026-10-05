@@ -1,6 +1,7 @@
 #RELEASE NOTES:
 
 ## 3.0.0
+- Complete overhaul of the library, now it gets compiled from separate modules.
 
 ## 2.5.0
 - Added the capability to create three types of visualizations, useful for including interactive panels into aventura: compare, scatter and circle pack.
