@@ -3,5 +3,6 @@
 
 # other folders
 /tests
+/tests1
 .vscode/settings.json
 source/aventura__.js
